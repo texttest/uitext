@@ -46,6 +46,7 @@ class HtmlExtractParser(HTMLParser):
         self.inSuperscript = False
         self.linkStart = None
         self.text = ""
+        self.liLevel = 0
         self.propertiesToIgnore = toIgnore
         self.iconProperties = iconProperties
         self.ignoreUntilCloseTag = ""
@@ -94,7 +95,7 @@ class HtmlExtractParser(HTMLParser):
         if self.ignoreUntilCloseTag:
             if self.ignoreUntilCloseTag == name:
                 self.ignoreRecursionLevel += 1
-        elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs):
+        elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
             self.ignoreUntilCloseTag = name
             self.ignoreRecursionLevel = 1
         elif name == "table":
@@ -124,7 +125,12 @@ class HtmlExtractParser(HTMLParser):
             elif name == "nav":
                 self.addText("\n(Navigation:\n")
             elif name == "li":
-                self.addText("- ")
+                indent = ""
+                if self.liLevel > 1:
+                    self.addText("\n")
+                    indent = "  " * self.liLevel
+                self.addText(indent + "- ")
+                self.liLevel += 1
             elif name == "br":
                 self.addText("\n")
             elif name == "input":
@@ -191,6 +197,7 @@ class HtmlExtractParser(HTMLParser):
         elif name == "b":
             self.addText("*")
         elif name == "li":
+            self.liLevel -= 1
             self.addText("\n")
         elif name == "nav":
             self.addText(")")
@@ -227,11 +234,19 @@ class HtmlExtractParser(HTMLParser):
             newLines = [ line.rstrip("\t\r\n") for line in content.splitlines() ]
             self.addText(self.fixWhitespace(" ".join(newLines)))
         
+    def needs_space(self, text, origText):
+        if len(origText) == 0 or len(text) == 0:
+            return False
+        
+        return text[0].isalnum() and origText[-1].isalnum()
+        
     def addText(self, text):
         if self.currentSubParsers:
             self.currentSubParsers[-1].addText(text)
         elif self.inBody and not self.inScript:
             if not text.isspace() or shouldAddWhitespace(text, self.text):
+                if self.needs_space(text, self.text):
+                    self.text += " "
                 self.text += text
 
 class SelectParser:

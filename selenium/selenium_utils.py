@@ -44,9 +44,9 @@ def setup(url):
         options.add_argument("--window-size=" + screen_size)
         options.add_argument('headless')
     
-    d = options.to_capabilities()
-    d['loggingPrefs'] = { 'browser':'ALL' }
-    driver = webdriver.Chrome(desired_capabilities=d)
+    desired_capabilities = {}
+    desired_capabilities['loggingPrefs'] = {'browser':'ALL'}
+    driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options)
     driver.get(url)
     
 def navigate(url):

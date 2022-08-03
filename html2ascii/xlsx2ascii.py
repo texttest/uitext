@@ -17,7 +17,7 @@ def print_data(obj):
 
 class WorkbookWriter:
     def __init__(self, fn):
-        with open(last_file, "rb") as f:
+        with open(fn, "rb") as f:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 self.workbook = openpyxl.load_workbook(f)

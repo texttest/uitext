@@ -12,6 +12,7 @@ import os, sys, time
 driver = None
 orig_url = None
 delay = float(os.getenv("USECASE_REPLAY_DELAY", "0"))
+test_id_key = "id"
 
 def run_with_usecase(url):
     setup(url)
@@ -26,6 +27,7 @@ def setup(url):
     global driver, orig_url
     orig_url = url
     options = webdriver.ChromeOptions()
+    options.add_argument('ignore-certificate-errors')
     screen_size = os.getenv("USECASE_SCREEN_SIZE")
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
     if browser_lang:
@@ -74,13 +76,16 @@ def get_next_fn(fn):
         return fn.replace("page", "2nd_page")
     
 def test_id_xpath(test_id):
-    return "//*[@data-test-id='" + test_id + "']"
+    return "//*[@" + test_id_key + "='" + test_id + "']"
 
 def find_element_by_test_id(test_id):
-    return driver.find_element_by_xpath(test_id_xpath(test_id))
+    return driver.find_element(By.XPATH, test_id_xpath(test_id))
 
 def enter_text(testid, text, enter=False):
     textfield = find_element_by_test_id(testid)
+    enter_text_in_field(textfield, text, enter=enter)
+    
+def enter_text_in_field(textfield, text, enter=False):
     if delay:
         time.sleep(delay)
     textfield.send_keys(Keys.CONTROL, "a")
@@ -128,14 +133,21 @@ def tick(factor=1):
     if delay:
         time.sleep(delay * factor)
     
-def capture_all_text(pagename="websource"):
+capture_numbered=False
+page_number = 0
+def capture_all_text(pagename="websource", element=None):
     if delay:
         time.sleep(delay)
     fn = pagename + ".html"
+    if capture_numbered:
+        global page_number
+        page_number += 1
+        fn = str(page_number).zfill(3) + "_" + fn
     while os.path.isfile(fn):
         fn = get_next_fn(fn)
     with open(fn, mode="w") as f:
-        f.write(driver.page_source)
+        to_write = element.get_attribute("outerHTML") if element else driver.page_source
+        f.write(to_write)
     
 def close():
     global driver

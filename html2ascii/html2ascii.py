@@ -135,14 +135,14 @@ class HtmlExtractParser(HTMLParser):
                 self.addText("\n")
             elif name == "input":
                 input_type = get_attr_value(attrs, "type")
-                if input_type in ("text", "datetime-local"):
+                if input_type in ("text", "datetime-local", "password"):
                     text = "=== "
                     placeholder = get_attr_value(attrs, "placeholder")
                     if placeholder:
                         text += "_" + placeholder + "_"
                     text += " ==="
-                    if input_type == "datetime-local":
-                        text += " (datetime-local)"
+                    if input_type in ("password", "datetime-local"):
+                        text += " (" + input_type + ")"
                     self.addText(text)
                 elif input_type == "button":
                     value = get_attr_value(attrs, "value")
@@ -349,11 +349,20 @@ if __name__ == '__main__':
     parser.add_argument('--ignore', default="", help='Comma-separated list of HTML element properties to ignore')
     parser.add_argument('--icons', default="", help='Comma-separated list of HTML element properties to treat as icons')
     parser.add_argument('--show-invisible', action='store_true', help='Show all elements, even if invisible. Mainly useful for simplifying tests by avoiding extra clicks')
-    parser.add_argument('filename')
+    parser.add_argument('filenames', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     toIgnore = parseList(args.ignore)
     iconProperties = parseList(args.icons)
-    
-    text = open(args.filename).read()
-    parser = HtmlExtractParser(toIgnore, iconProperties, args.show_invisible)
-    print(parser.parse(text))
+    multiple = len(args.filenames) > 1
+    for i, filename in enumerate(args.filenames):
+        if multiple and i > 0:
+            print()
+        if multiple:
+            stage = os.path.basename(filename).split(".", 1)[0]
+            if len(stage) > 3 and stage[3] == "_" and stage[:3].isdigit():
+                stage = stage[4:]
+            stage = " " + stage + " "
+            print(stage.center(30, "-"))
+        text = open(filename).read()
+        parser = HtmlExtractParser(toIgnore, iconProperties, args.show_invisible)
+        print(parser.parse(text))

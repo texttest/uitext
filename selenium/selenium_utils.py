@@ -3,7 +3,7 @@ from selenium import webdriver # @UnresolvedImport
 from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImport
 from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
-from selenium.common.exceptions import WebDriverException # @UnresolvedImport
+from selenium.common.exceptions import WebDriverException, NoSuchShadowRootException # @UnresolvedImport
 from selenium.webdriver.common.by import By # @UnresolvedImport
 
 
@@ -13,6 +13,7 @@ driver = None
 orig_url = None
 delay = float(os.getenv("USECASE_REPLAY_DELAY", "0"))
 test_id_key = "id"
+add_explicit_display_tags = False
 
 def run_with_usecase(url):
     setup(url)
@@ -92,6 +93,62 @@ def enter_text_in_field(textfield, text, enter=False):
     textfield.send_keys(text)
     if enter:
         textfield.send_keys(Keys.ENTER)
+
+def shared_prefix_length(text1, text2):
+    for i, letter in enumerate(text1):
+        if i >= len(text2) or text2[i] != letter:
+            return i
+
+def edit_text_in_field(textfield, text, enter=False):
+    if delay:
+        time.sleep(delay)
+    origText = textfield.get_attribute('value')
+    sharedLen = shared_prefix_length(origText, text)
+    for _ in range(len(origText) - sharedLen):
+        textfield.send_keys(Keys.BACK_SPACE)
+    textfield.send_keys(text[sharedLen:])
+    if enter:
+        textfield.send_keys(Keys.ENTER)
+
+def find_shadow_dom_info():
+    info = []
+    for element in driver.find_elements(By.CSS_SELECTOR, "*"):
+        if add_explicit_display_tags:
+            make_display_explicit(element)
+        try:
+            shadow_root = element.shadow_root
+            content = find_shadow_content(shadow_root)
+            info.append((element, content))
+        except NoSuchShadowRootException:
+            continue
+    return info
+
+
+def add_all_display_tags():
+    for element in driver.find_elements(By.CSS_SELECTOR, "*"):
+        if add_explicit_display_tags:
+            make_display_explicit(element)
+
+# get all 'root elements' whose parent is themselves.
+# Normal search methods don't work in Shadow DOMs...
+# Ignore styles for the shadow content, just cause clutter and can't easily be inserted
+# into the main DOM html
+
+def make_display_explicit(element):
+    display = element.value_of_css_property("display")
+    if display == "flex" or (display == "block" and element.tag_name != "div"):
+        driver.execute_script("arguments[0].setAttribute('data-test-explicit-display',arguments[1])", element, display)
+
+def find_shadow_content(shadow_root):
+    content = []
+    for element in shadow_root.find_elements(By.CSS_SELECTOR, "*"):
+        if element.tag_name != "style":
+            parent = element.find_element(By.XPATH, ".//parent::*")
+            if parent.id == element.id:
+                content.append(element)
+            if add_explicit_display_tags:
+                make_display_explicit(element)
+    return content
         
 def select_from_dropdown(testid, text):
     tick()
@@ -135,7 +192,7 @@ def tick(factor=1):
     
 capture_numbered=False
 page_number = 0
-def capture_all_text(pagename="websource", element=None):
+def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
     if delay:
         time.sleep(delay)
     fn = pagename + ".html"
@@ -146,7 +203,15 @@ def capture_all_text(pagename="websource", element=None):
     while os.path.isfile(fn):
         fn = get_next_fn(fn)
     with open(fn, mode="w") as f:
+        if add_explicit_display_tags and not shadow_dom_info:
+            add_all_display_tags()
         to_write = element.get_attribute("outerHTML") if element else driver.page_source
+        if shadow_dom_info:
+            for shadow_host, shadow_content in shadow_dom_info:
+                contentHtml = ""
+                for content in shadow_content:
+                    contentHtml += content.get_attribute("outerHTML")
+                to_write = to_write.replace(shadow_host.get_attribute("outerHTML"), contentHtml)
         f.write(to_write)
     
 def close():

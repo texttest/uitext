@@ -9,7 +9,6 @@ import sys, os
 from html.parser import HTMLParser
 from gridformatter import GridFormatter, GridFormatterWithHeader
 from traceback import format_exception
-from html.entities import name2codepoint
 import argparse
 
 def getExceptionString():
@@ -38,6 +37,7 @@ def shouldAddWhitespace(text, existingText):
 
 
 class HtmlExtractParser(HTMLParser):
+    voidTags = [ 'area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr' ]
     def __init__(self, toIgnore=set(), iconProperties=set(), show_invisible=False):
         HTMLParser.__init__(self)
         self.currentSubParsers = []
@@ -47,6 +47,11 @@ class HtmlExtractParser(HTMLParser):
         self.linkStart = None
         self.text = ""
         self.liLevel = 0
+        self.level = 0
+        self.modalDivLevel = None
+        self.flexData = {}
+        self.beforeDataText = ""
+        self.afterDataText = ""
         self.propertiesToIgnore = toIgnore
         self.iconProperties = iconProperties
         self.ignoreUntilCloseTag = ""
@@ -85,17 +90,41 @@ class HtmlExtractParser(HTMLParser):
             return ":" + " ".join(sorted(shortnames)) + ":"
         else:
             return ""
-        
-    def is_invisible(self, attrs):
-        return not self.show_invisible and get_attr_value(attrs, "style") == "display: none;"
+            
+    def is_invisible(self, attrs, display):
+        return not self.show_invisible and (display == "none" or get_attr_value(attrs, "visibility") == "hidden")
 
+    def is_block_display(self, name, display):
+        # ignore when we expect it anyway
+        if name in ("div", "h1", "h2", "h3", "h4", "span", "button", "th", "td"):
+            return False
+        else:
+            return display == "block"
+    
+    def get_display_style(self, attrs):
+        test_display = get_attr_value(attrs, "data-test-explicit-display")
+        if test_display:
+            return test_display
+        style = get_attr_value(attrs, "style")
+        if style is not None:
+            displayKey = "display: "
+            pos = style.find(displayKey)
+            if pos != -1:
+                remains = style[pos + len(displayKey):]
+                return remains.split(";", 1)[0]        
+        return "unknown"
+    
     def handle_starttag(self, rawname, attrs):
+        self.afterDataText = self.afterDataText.rstrip()
         name = rawname.lower()
+        if name not in self.voidTags:
+            self.level += 1
         elementProperties = self.getElementProperties(attrs)
+        display = self.get_display_style(attrs)
         if self.ignoreUntilCloseTag:
             if self.ignoreUntilCloseTag == name:
                 self.ignoreRecursionLevel += 1
-        elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
+        elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs, display) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
             self.ignoreUntilCloseTag = name
             self.ignoreRecursionLevel = 1
         elif name == "table":
@@ -107,18 +136,18 @@ class HtmlExtractParser(HTMLParser):
                 self.text += "\n"
             self.currentSubParsers.append(SelectParser())
         else:
-            if name == "svg":
-                label = get_attr_value(attrs, "aria-labelledby")
-                if label:
-                    self.handle_data(":" + label + ":")
-                self.ignoreUntilCloseTag = name
-                self.ignoreRecursionLevel = 1
-            elif elementProperties and (name == "i" or not self.iconProperties.isdisjoint(elementProperties)):
-                self.handle_data(self.get_icon_name(elementProperties))
+            if elementProperties and (name == "i" or not self.iconProperties.isdisjoint(elementProperties)):
+                self.afterDataText += self.get_icon_name(elementProperties)
             elif name == "img":
                 self.handle_data("Image '" + os.path.basename(get_attr_value(attrs, "src")) + "'")
             elif name == "iframe":
                 self.handle_data("IFrame '" + get_attr_value(attrs, "src") + "'")
+
+            if self.is_block_display(name, display):
+                self.afterDataText += "\n"
+            elif display == "flex":
+                flexTag = name
+                self.flexData[self.level] = flexTag
 
             if name == "button":
                 self.handle_data("Button '")
@@ -143,12 +172,13 @@ class HtmlExtractParser(HTMLParser):
                     text += " ==="
                     if input_type in ("password", "datetime-local"):
                         text += " (" + input_type + ")"
-                    self.addText(text)
+                    self.handle_data(text)
                 elif input_type == "button":
                     value = get_attr_value(attrs, "value")
                     self.handle_data("Button '" + value + "'")
                 elif input_type == "radio":
                     self.handle_data("( ) ")
+                
             elif name == "textarea":
                 self.addText("\n" + "=" * 10 + "\n")
             elif name == "b":
@@ -168,14 +198,31 @@ class HtmlExtractParser(HTMLParser):
                 self.text += "_" * 100 + "\n"
             elif name == "a":
                 self.linkStart = len(self.text)
-            elif name == "div" and not self.text.endswith("\n"):
-                self.text += "\n"
+            elif name == "footer":
+                self.addText("\n")
+            elif name == "div":
+                if not self.in_flex() and not self.text.endswith("\n"):
+                    self.beforeDataText = "\n"
+                if elementProperties and "modal" in elementProperties:
+                    self.modalDivLevel = self.level
+                    self.addText("\n" + " Modal dialog ".center(50, "_") + "\n")
             elif self.text.strip() and name in [ "h1", "h2", "h3", "h4" ]:
                 while not self.text.endswith("\n\n"):
                     self.text += "\n"
+                    
+    def in_flex(self):
+        return self.level - 1 in self.flexData
 
     def handle_endtag(self, rawname):
         name = rawname.lower()
+        self.beforeDataText = ""
+        self.handle_after_data_text()
+        for flexDivLevel, flexTag in self.flexData.items():
+            if name == flexTag and self.level == flexDivLevel:
+                del self.flexData[flexDivLevel]
+                if self.level - 1 not in self.flexData:
+                    self.addText("\n")
+                break
         if self.ignoreUntilCloseTag:
             if self.ignoreUntilCloseTag == name:
                 self.ignoreRecursionLevel -= 1
@@ -199,6 +246,10 @@ class HtmlExtractParser(HTMLParser):
         elif name == "li":
             self.liLevel -= 1
             self.addText("\n")
+        elif name == "div":
+            if self.level == self.modalDivLevel:
+                self.modalDivLevel = None
+                self.handle_data("_" * 50)
         elif name == "nav":
             self.addText(")")
         elif name == "textarea":
@@ -221,6 +272,7 @@ class HtmlExtractParser(HTMLParser):
             else:
                 self.text = self.text[:self.linkStart] + linkText + "->  "
             self.linkStart = None
+        self.level -= 1
         
     def fixWhitespace(self, line):
         if self.inSuperscript:
@@ -228,18 +280,52 @@ class HtmlExtractParser(HTMLParser):
         while "  " in line:
             line = line.replace("  ", " ")
         return line
+    
+    def handle_after_data_text(self):
+        if self.afterDataText:
+            if self.afterDataText.endswith("\n\n"):
+                self.afterDataText = self.afterDataText.rstrip() + "\n"
+            self.addText(self.afterDataText)
+            self.afterDataText = ""
 
     def handle_data(self, content):
         if not self.ignoreUntilCloseTag:
+            if content == '\xa0': # non-breaking space, remove block lines
+                self.addText(" ")
+                self.afterDataText = self.afterDataText.rstrip()
+                self.handle_after_data_text()
+                
+            if not content.strip():
+                return
             newLines = [ line.rstrip("\t\r\n") for line in content.splitlines() ]
-            self.addText(self.fixWhitespace(" ".join(newLines)))
+            text = self.fixWhitespace(" ".join(newLines))
+            if self.beforeDataText:
+                self.addText(self.beforeDataText)
+                self.beforeDataText = ""
+            self.addText(text)
+            if text:
+                self.handle_after_data_text()
+        
+    def quotes_matched_in_line(self):
+        pos = self.text.rfind("\n")
+        return self.text[pos:].count("'") % 2 == 0
         
     def needs_space(self, text, origText):
         if len(origText) == 0 or len(text) == 0:
             return False
         
-        return text[0].isalnum() and origText[-1].isalnum()
+        newChar = text[0]
+        lastChar = origText[-1]
+        newCharContent = newChar.isalnum() or newChar in '(='
+        lastCharContent = lastChar.isalnum() or lastChar in '):'
+        if newCharContent == lastCharContent:
+            return newCharContent
         
+        if newChar != "'" and lastChar != "'":
+            return False
+        
+        return self.quotes_matched_in_line()
+                
     def addText(self, text):
         if self.currentSubParsers:
             self.currentSubParsers[-1].addText(text)

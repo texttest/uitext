@@ -3,7 +3,7 @@ from selenium import webdriver # @UnresolvedImport
 from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImport
 from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
-from selenium.common.exceptions import WebDriverException, NoSuchShadowRootException # @UnresolvedImport
+from selenium.common.exceptions import WebDriverException, NoSuchShadowRootException, StaleElementReferenceException # @UnresolvedImport
 from selenium.webdriver.common.by import By # @UnresolvedImport
 
 
@@ -28,7 +28,7 @@ def setup(url):
     global driver, orig_url
     orig_url = url
     options = webdriver.ChromeOptions()
-    options.add_argument('ignore-certificate-errors')
+    options.accept_insecure_certs = True
     screen_size = os.getenv("USECASE_SCREEN_SIZE")
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
     if browser_lang:
@@ -135,9 +135,13 @@ def add_all_display_tags():
 # into the main DOM html
 
 def make_display_explicit(element):
-    display = element.value_of_css_property("display")
-    if display == "flex" or (display == "block" and element.tag_name != "div"):
-        driver.execute_script("arguments[0].setAttribute('data-test-explicit-display',arguments[1])", element, display)
+    try:
+        display = element.value_of_css_property("display")
+        if display in ["flex", "inline-block"] or (display == "block" and element.tag_name != "div"):
+            driver.execute_script("arguments[0].setAttribute('data-test-explicit-display',arguments[1])", element, display)
+    except StaleElementReferenceException:
+        # if something is stale, ignore it
+        pass
 
 def find_shadow_content(shadow_root):
     content = []

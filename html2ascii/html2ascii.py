@@ -96,7 +96,7 @@ class HtmlExtractParser(HTMLParser):
 
     def is_block_display(self, name, display):
         # ignore when we expect it anyway
-        if name in ("div", "h1", "h2", "h3", "h4", "span", "button", "th", "td"):
+        if name in ("div", "h1", "h2", "h3", "h4", "span", "button", "th", "td", "input"):
             return False
         else:
             return display == "block"
@@ -178,6 +178,8 @@ class HtmlExtractParser(HTMLParser):
                     self.handle_data("Button '" + value + "'")
                 elif input_type == "radio":
                     self.handle_data("( ) ")
+                elif input_type == "checkbox":
+                    self.handle_data("[ ] ")
                 
             elif name == "textarea":
                 self.addText("\n" + "=" * 10 + "\n")

@@ -28,7 +28,7 @@ def getUnderline(text):
 def shouldAddWhitespace(text, existingText):
     if len(existingText) == 0:
         return False
-    
+
     lastChar = existingText[-1]
     if text.startswith("\n"):
         return lastChar != "\n"
@@ -81,16 +81,16 @@ class HtmlExtractParser(HTMLParser):
         is_icon = "icon" in elementProperties
         if is_icon:
             elementProperties.remove("icon")
-        
+
         chosenProperties = self.iconProperties & elementProperties
         if not is_icon or len(chosenProperties) > 0:
             elementProperties = chosenProperties
         if elementProperties:
-            shortnames = [ name.split("__")[-1] for name in elementProperties ]  
+            shortnames = [ name.split("__")[-1] for name in elementProperties ]
             return ":" + " ".join(sorted(shortnames)) + ":"
         else:
             return ""
-            
+
     def is_invisible(self, attrs, display):
         return not self.show_invisible and (display == "none" or get_attr_value(attrs, "visibility") == "hidden")
 
@@ -100,7 +100,7 @@ class HtmlExtractParser(HTMLParser):
             return False
         else:
             return display == "block"
-    
+
     def get_display_style(self, attrs):
         test_display = get_attr_value(attrs, "data-test-explicit-display")
         if test_display:
@@ -111,9 +111,9 @@ class HtmlExtractParser(HTMLParser):
             pos = style.find(displayKey)
             if pos != -1:
                 remains = style[pos + len(displayKey):]
-                return remains.split(";", 1)[0]        
+                return remains.split(";", 1)[0]
         return "unknown"
-    
+
     def handle_starttag(self, rawname, attrs):
         self.afterDataText = self.afterDataText.rstrip()
         name = rawname.lower()
@@ -147,7 +147,7 @@ class HtmlExtractParser(HTMLParser):
                 self.afterDataText += "\n"
             elif display == "flex":
                 flexTag = name
-                self.flexData[self.level] = flexTag
+                self.flexData[self.level] = flexTag, len(self.text)
 
             if name == "button":
                 self.handle_data("Button '")
@@ -180,7 +180,7 @@ class HtmlExtractParser(HTMLParser):
                     self.handle_data("( ) ")
                 elif input_type == "checkbox":
                     self.handle_data("[ ] ")
-                
+
             elif name == "textarea":
                 self.addText("\n" + "=" * 10 + "\n")
             elif name == "b":
@@ -211,18 +211,23 @@ class HtmlExtractParser(HTMLParser):
             elif self.text.strip() and name in [ "h1", "h2", "h3", "h4" ]:
                 while not self.text.endswith("\n\n"):
                     self.text += "\n"
-                    
+
     def in_flex(self):
-        return self.level - 1 in self.flexData
+        if self.level - 1 not in self.flexData:
+            return False
+
+        _, flexStartPos = self.flexData.get(self.level - 1)
+        textSinceFlexStart = self.text[flexStartPos:]
+        return "\n" not in textSinceFlexStart.strip()
 
     def handle_endtag(self, rawname):
         name = rawname.lower()
         self.beforeDataText = ""
         self.handle_after_data_text()
-        for flexDivLevel, flexTag in self.flexData.items():
+        for flexDivLevel, (flexTag, _) in self.flexData.items():
             if name == flexTag and self.level == flexDivLevel:
                 del self.flexData[flexDivLevel]
-                if self.level - 1 not in self.flexData:
+                if not self.in_flex():
                     self.addText("\n")
                 break
         if self.ignoreUntilCloseTag:
@@ -252,6 +257,11 @@ class HtmlExtractParser(HTMLParser):
             if self.level == self.modalDivLevel:
                 self.modalDivLevel = None
                 self.handle_data("_" * 50)
+            if self.in_flex():
+                self.text = self.text.rstrip("\n")
+            else:
+                if not self.text.endswith("\n"):
+                    self.addText("\n")
         elif name == "nav":
             self.addText(")")
         elif name == "textarea":
@@ -275,14 +285,14 @@ class HtmlExtractParser(HTMLParser):
                 self.text = self.text[:self.linkStart] + linkText + "->  "
             self.linkStart = None
         self.level -= 1
-        
+
     def fixWhitespace(self, line):
         if self.inSuperscript:
             return line.strip()
         while "  " in line:
             line = line.replace("  ", " ")
         return line
-    
+
     def handle_after_data_text(self):
         if self.afterDataText:
             if self.afterDataText.endswith("\n\n"):
@@ -296,7 +306,7 @@ class HtmlExtractParser(HTMLParser):
                 self.addText(" ")
                 self.afterDataText = self.afterDataText.rstrip()
                 self.handle_after_data_text()
-                
+
             if not content.strip():
                 return
             newLines = [ line.rstrip("\t\r\n") for line in content.splitlines() ]
@@ -307,27 +317,27 @@ class HtmlExtractParser(HTMLParser):
             self.addText(text)
             if text:
                 self.handle_after_data_text()
-        
+
     def quotes_matched_in_line(self):
         pos = self.text.rfind("\n")
         return self.text[pos:].count("'") % 2 == 0
-        
+
     def needs_space(self, text, origText):
         if len(origText) == 0 or len(text) == 0:
             return False
-        
+
         newChar = text[0]
         lastChar = origText[-1]
         newCharContent = newChar.isalnum() or newChar in '(='
         lastCharContent = lastChar.isalnum() or lastChar in '):'
         if newCharContent == lastCharContent:
             return newCharContent
-        
+
         if newChar != "'" and lastChar != "'":
             return False
-        
+
         return self.quotes_matched_in_line()
-                
+
     def addText(self, text):
         if self.currentSubParsers:
             self.currentSubParsers[-1].addText(text)
@@ -341,16 +351,16 @@ class SelectParser:
     def __init__(self):
         self.options = []
         self.inOption = False
-        
+
     def startElement(self, name, attrs):
         if name == "option":
             self.options.append("")
             self.inOption = True
-            
+
     def endElement(self, name):
         if name == "option":
             self.inOption = False
-            
+
     def addText(self, text):
         if self.inOption:
             self.options[-1] += text
@@ -369,7 +379,7 @@ class TableParser:
 
     def isCell(self, name):
         return name in ["td", "th"]
-    
+
     def isRow(self, name):
         return name in ["tr", "thead"]
 
@@ -385,7 +395,7 @@ class TableParser:
                 self.currentRow.append("")
                 if name == "td" and "thead" not in self.activeElements:
                     self.currentRowIsHeader = False
-            
+
     def endElement(self, name):
         if name in self.activeElements:  # Don't fail on duplicated end tags
             if self.currentRow is not None and self.isCell(name):
@@ -403,11 +413,11 @@ class TableParser:
                 self.currentRow = None
             if name in [ "h1", "h2", "h3", "h4"] and self.currentRow:
                 self.addText(getUnderline(self.currentRow[-1]))
-        
+
     def getText(self):
         if len(self.grid) == 0:
             return ""
-        
+
         columnCount = max((len(r) for r in self.grid))
         if self.headerRows:
             columnCountHeader = max((len(r) for r in self.headerRows))
@@ -416,10 +426,10 @@ class TableParser:
         else:
             formatter = GridFormatter(self.grid, columnCount)
         return str(formatter)
-    
+
     def isSpaces(self, text):
         return len(text) and all((c == " " for c in text))
-            
+
     def addText(self, text):
         if self.currentRow is not None:
             if len(self.currentRow):

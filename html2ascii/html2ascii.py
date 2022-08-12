@@ -1,9 +1,4 @@
-'''
-Created on 27 nov. 2017
-
-@author: E601429
-
-'''
+#!/usr/bin/env python3
 
 import sys, os
 from html.parser import HTMLParser

@@ -170,6 +170,9 @@ def wait_until(condition):
 def wait_for_visible(*selectorArgs):
     wait_until(EC.visibility_of_element_located(selectorArgs))
 
+def wait_for_clickable(*selectorArgs):
+    wait_until(EC.element_to_be_clickable(selectorArgs))
+
 def wait_for_ajax():
     wait_until(lambda d: d.execute_script("return jquery.active == 0"))
 

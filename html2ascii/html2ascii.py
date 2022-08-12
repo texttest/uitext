@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+""" Utility for UI testing - convert an HTML dump to an ASCII screenshot"""
+
 import sys, os
 from html.parser import HTMLParser
 from gridformatter import GridFormatter, GridFormatterWithHeader

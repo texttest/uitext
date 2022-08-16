@@ -24,6 +24,14 @@ def run_with_usecase(url):
             close()
             raise
 
+def get_downloads_dir():
+    sandbox = os.getenv("TEXTTEST_SANDBOX")
+    if sandbox:
+        downloadsDir = os.path.join(sandbox, "downloads")
+        if not os.path.isdir(downloadsDir):
+            os.mkdir(downloadsDir)
+        return downloadsDir
+
 def setup(url):
     global driver, orig_url
     orig_url = url
@@ -33,6 +41,15 @@ def setup(url):
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
     if browser_lang:
         options.add_argument("--lang=" + browser_lang)
+    # if files get downloaded, make sure they get downloaded locally
+    downloadsDir = get_downloads_dir()
+    if downloadsDir:
+        prefs = { "download.default_directory": downloadsDir,
+                  "download.prompt_for_download": False,
+                  "download.directory_upgrade": True,
+                  "safebrowsing_for_trusted_sources_enabled": False,
+                  "safebrowsing.enabled": False }
+        options.add_experimental_option("prefs", prefs)
     if delay:
         if screen_size:
             options.add_argument("--window-size=" + screen_size)
@@ -192,6 +209,14 @@ def wait_and_click(*selectorArgs):
 def wait_and_click_test_id(test_id):
     wait_and_click(By.XPATH, test_id_xpath(test_id))
 
+def wait_for_download():
+    downloadsDir = get_downloads_dir()
+    if downloadsDir:
+        for _ in range(100):
+            if len(os.listdir(downloadsDir)) > 0:
+                return
+            else:
+                time.sleep(0.1)
     
 def tick(factor=1):
     if delay:

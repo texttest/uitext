@@ -17,6 +17,9 @@ add_explicit_display_tags = False
 
 def run_with_usecase(url):
     setup(url)
+    run_usecase()
+    
+def run_usecase():
     if os.path.isfile("usecase.py"):
         try:
             exec(compile(open("usecase.py").read(), "usecase.py", 'exec'))
@@ -33,8 +36,11 @@ def get_downloads_dir():
         return downloadsDir
 
 def setup(url):
-    global driver, orig_url
-    orig_url = url
+    set_original_url(url)
+    navigate(url)
+
+def create_driver():    
+    global driver
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
     screen_size = os.getenv("USECASE_SCREEN_SIZE")
@@ -67,7 +73,14 @@ def setup(url):
     desired_capabilities = {}
     desired_capabilities['loggingPrefs'] = {'browser':'ALL'}
     driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options)
-    driver.get(url)
+    
+def add_to_session_storage(key, value):
+    driver.execute_script("sessionStorage.setItem('" + key + "', '" + value.replace("'", "\\'") + "');")
+
+def set_original_url(url):
+    create_driver()
+    global orig_url
+    orig_url = url
     
 def navigate(url):
     if not url.startswith("http"):
@@ -247,6 +260,7 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
                 to_write = to_write.replace(shadow_host.get_attribute("outerHTML"), contentHtml)
         f.write(to_write)
     
+browser_console_file = sys.stderr
 def close():
     global driver
     if driver != None:
@@ -255,9 +269,9 @@ def close():
         for entry in driver.get_log('browser'):
             actualMessage = " ".join(entry['message'].split(" ")[2:])
             try:
-                sys.stderr.write(eval(actualMessage) + '\n')
+                print(eval(actualMessage), file=browser_console_file)
             except:
-                sys.stderr.write("FAILED to parse " + entry['message'] + '!\n')
+                print("FAILED to parse " + entry['message'] + '!', file=browser_console_file)
         driver.quit()
         driver = None
     else:

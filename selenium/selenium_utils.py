@@ -213,7 +213,8 @@ def wait_for_download():
     downloadsDir = get_downloads_dir()
     if downloadsDir:
         for _ in range(100):
-            if len(os.listdir(downloadsDir)) > 0:
+            files = [ fn for fn in os.listdir(downloadsDir) if not fn.endswith(".crdownload") ]
+            if len(files) > 0:
                 return
             else:
                 time.sleep(0.1)

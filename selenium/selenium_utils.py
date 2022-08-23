@@ -140,23 +140,29 @@ def edit_text_in_field(textfield, text, enter=False):
     if enter:
         textfield.send_keys(Keys.ENTER)
 
-def find_shadow_dom_info():
+def find_shadow_dom_info(*selectorArgs):
     info = []
-    for element in driver.find_elements(By.CSS_SELECTOR, "*"):
-        if add_explicit_display_tags:
-            make_display_explicit(element)
-        try:
-            shadow_root = element.shadow_root
-            content = find_shadow_content(shadow_root)
+    if len(selectorArgs):
+        for element in driver.find_elements(*selectorArgs):
+            content = find_shadow_content(element.shadow_root)
             info.append((element, content))
-        except NoSuchShadowRootException:
-            continue
+        add_all_display_tags()
+    else:
+        for element in driver.find_elements(By.CSS_SELECTOR, "*"):
+            if add_explicit_display_tags:
+                make_display_explicit(element)
+            try:
+                shadow_root = element.shadow_root
+                content = find_shadow_content(shadow_root)
+                info.append((element, content))
+            except NoSuchShadowRootException:
+                continue
     return info
 
 
 def add_all_display_tags():
-    for element in driver.find_elements(By.CSS_SELECTOR, "*"):
-        if add_explicit_display_tags:
+    if add_explicit_display_tags:
+        for element in driver.find_elements(By.CSS_SELECTOR, "*"):
             make_display_explicit(element)
 
 # get all 'root elements' whose parent is themselves.
@@ -205,6 +211,20 @@ def wait_for_clickable(*selectorArgs):
 
 def wait_for_ajax():
     wait_until(lambda d: d.execute_script("return jquery.active == 0"))
+
+def case_insensitive_text_to_be_present_in_element(locator, text_):
+    # copied from Selenium. Can be useful not to worry about case, as this is often determined by styling
+    def _predicate(driver):
+        try:
+            element_text = driver.find_element(*locator).text
+            return text_.lower() in element_text.lower()
+        except StaleElementReferenceException:
+            return False
+
+    return _predicate
+
+def wait_for_case_insensitive_text(text, *selectorArgs):
+    wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text))
 
 def wait_and_click(*selectorArgs):
     for _ in range(5):

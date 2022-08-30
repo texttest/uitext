@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC # @UnresolvedIm
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
 from selenium.common.exceptions import WebDriverException, NoSuchShadowRootException, StaleElementReferenceException # @UnresolvedImport
 from selenium.webdriver.common.by import By # @UnresolvedImport
-
+from selenium.webdriver.common.service import Service
 
 import os, sys, time
 
@@ -72,7 +72,18 @@ def create_driver():
     
     desired_capabilities = {}
     desired_capabilities['loggingPrefs'] = {'browser':'ALL'}
-    driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options)
+    try:
+        driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options)
+    except WebDriverException as e:
+        # on Ubuntu, snap chromedriver has a non-default name it seems
+        if os.name == "posix" and "executable needs to be in PATH" in str(e):
+            service = Service("chromium.chromedriver")
+            try:
+                driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options, service=service)
+            except WebDriverException:
+                raise e
+        else:
+            raise
     
 def add_to_session_storage(key, value):
     driver.execute_script("sessionStorage.setItem('" + key + "', '" + value.replace("'", "\\'") + "');")

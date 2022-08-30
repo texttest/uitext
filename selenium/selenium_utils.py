@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC # @UnresolvedIm
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
 from selenium.common.exceptions import WebDriverException, NoSuchShadowRootException, StaleElementReferenceException # @UnresolvedImport
 from selenium.webdriver.common.by import By # @UnresolvedImport
-from selenium.webdriver.common.service import Service
+from selenium.webdriver.chrome.service import Service
 
 import os, sys, time
 

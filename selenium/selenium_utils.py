@@ -212,7 +212,6 @@ def wait_until(condition):
         return WebDriverWait(driver, 30).until(condition)
     except Exception as e:
         sys.stderr.write("Timed out!" + repr(driver) + "\n")
-        close()
         raise
     
 def wait_for_visible(*selectorArgs):

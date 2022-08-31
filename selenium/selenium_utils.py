@@ -24,6 +24,7 @@ def run_usecase():
         try:
             exec(compile(open("usecase.py").read(), "usecase.py", 'exec'))
         except Exception:
+            capture_all_text("termination")
             close()
             raise
 
@@ -262,6 +263,7 @@ def wait_for_download():
                 return
             else:
                 time.sleep(0.1)
+    raise WebDriverException("No download files available after waiting 10 seconds")
     
 def tick(factor=1):
     if delay:
@@ -279,6 +281,7 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
         fn = str(page_number).zfill(3) + "_" + fn
     while os.path.isfile(fn):
         fn = get_next_fn(fn)
+    driver.save_screenshot(fn.replace(".html", ".png"))
     with open(fn, mode="w") as f:
         if add_explicit_display_tags and not shadow_dom_info:
             add_all_display_tags()

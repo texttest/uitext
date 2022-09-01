@@ -3,7 +3,7 @@ from selenium import webdriver # @UnresolvedImport
 from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImport
 from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
-from selenium.common.exceptions import WebDriverException, NoSuchShadowRootException, StaleElementReferenceException # @UnresolvedImport
+from selenium.common.exceptions import WebDriverException, StaleElementReferenceException # @UnresolvedImport
 from selenium.webdriver.common.by import By # @UnresolvedImport
 from selenium.webdriver.chrome.service import Service
 
@@ -167,7 +167,7 @@ def find_shadow_dom_info(*selectorArgs):
                 shadow_root = element.shadow_root
                 content = find_shadow_content(shadow_root)
                 info.append((element, content))
-            except NoSuchShadowRootException:
+            except WebDriverException:
                 continue
     return info
 

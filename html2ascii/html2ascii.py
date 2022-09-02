@@ -32,6 +32,8 @@ def shouldAddWhitespace(text, existingText):
     else:
         return not lastChar.isspace()
 
+class ModalAbort(Exception):
+    pass
 
 class HtmlExtractParser(HTMLParser):
     voidTags = [ 'area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr' ]
@@ -58,6 +60,8 @@ class HtmlExtractParser(HTMLParser):
     def parse(self, text):
         try:
             self.feed(text)
+        except ModalAbort:
+            pass
         except:
             sys.stderr.write("Failed to parse browser text:\n")
             sys.stderr.write(getExceptionString())
@@ -204,11 +208,18 @@ class HtmlExtractParser(HTMLParser):
                     self.beforeDataText = "\n"
                 if elementProperties and "modal" in elementProperties:
                     self.modalDivLevel = self.level
+                    self.reset_for_dialog()
                     self.addText("\n" + " Modal dialog ".center(50, "_") + "\n")
             elif self.text.strip() and name in [ "h1", "h2", "h3", "h4" ]:
                 while not self.text.endswith("\n\n"):
                     self.text += "\n"
-
+                    
+    def reset_for_dialog(self):
+        self.text = ""
+        self.flexData.clear()
+        self.beforeDataText = ""
+        self.afterDataText = ""
+        
     def in_flex(self):
         if self.level - 1 not in self.flexData:
             return False
@@ -254,6 +265,7 @@ class HtmlExtractParser(HTMLParser):
             if self.level == self.modalDivLevel:
                 self.modalDivLevel = None
                 self.handle_data("_" * 50)
+                raise ModalAbort()
             if self.in_flex():
                 self.text = self.text.rstrip("\n")
             else:

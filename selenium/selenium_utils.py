@@ -14,6 +14,7 @@ orig_url = None
 delay = float(os.getenv("USECASE_REPLAY_DELAY", "0"))
 test_id_key = "id"
 add_explicit_display_tags = False
+wait_timeout = 30
 
 def run_with_usecase(url):
     setup(url)
@@ -209,7 +210,7 @@ def select_from_dropdown(testid, text):
 
 def wait_until(condition):
     try:
-        return WebDriverWait(driver, 30).until(condition)
+        return WebDriverWait(driver, wait_timeout).until(condition)
     except Exception as e:
         sys.stderr.write("Timed out!" + repr(driver) + "\n")
         raise

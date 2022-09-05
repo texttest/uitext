@@ -126,8 +126,10 @@ class HtmlExtractParser(HTMLParser):
             if self.ignoreUntilCloseTag == name:
                 self.ignoreRecursionLevel += 1
         elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs, display) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
-            self.ignoreUntilCloseTag = name
-            self.ignoreRecursionLevel = 1
+            # if the name is a void tag like "input", close tag will never come. Ignore this but don't set anything else.
+            if name not in self.voidTags:
+                self.ignoreUntilCloseTag = name
+                self.ignoreRecursionLevel = 1
         elif name == "table":
             if not self.text.endswith("\n"):
                 self.text += "\n"

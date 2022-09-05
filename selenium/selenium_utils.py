@@ -215,6 +215,9 @@ def wait_until(condition):
         sys.stderr.write("Timed out!" + repr(driver) + "\n")
         raise
     
+def wait_for_element(*selectorArgs):
+    wait_until(EC.presence_of_element_located(selectorArgs))
+    
 def wait_for_visible(*selectorArgs):
     wait_until(EC.visibility_of_element_located(selectorArgs))
 

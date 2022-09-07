@@ -208,24 +208,24 @@ def select_from_dropdown(testid, text):
     select = Select(find_element_by_test_id(testid))
     select.select_by_visible_text(text)
 
-def wait_until(condition):
+def wait_until(condition, error=None):
     try:
         return WebDriverWait(driver, wait_timeout).until(condition)
     except Exception as e:
-        sys.stderr.write("Timed out!" + repr(driver) + "\n")
+        print("Timed out!", error or driver, file=sys.stderr)
         raise
     
-def wait_for_element(*selectorArgs):
-    wait_until(EC.presence_of_element_located(selectorArgs))
+def wait_for_element(*selectorArgs, **kw):
+    wait_until(EC.presence_of_element_located(selectorArgs), **kw)
     
-def wait_for_visible(*selectorArgs):
-    wait_until(EC.visibility_of_element_located(selectorArgs))
+def wait_for_visible(*selectorArgs, **kw):
+    wait_until(EC.visibility_of_element_located(selectorArgs), **kw)
 
-def wait_for_clickable(*selectorArgs):
-    wait_until(EC.element_to_be_clickable(selectorArgs))
+def wait_for_clickable(*selectorArgs, **kw):
+    wait_until(EC.element_to_be_clickable(selectorArgs), **kw)
 
 def wait_for_ajax():
-    wait_until(lambda d: d.execute_script("return jquery.active == 0"))
+    wait_until(lambda d: d.execute_script("return jquery.active == 0"), error="Ajax operation did not complete")
 
 def case_insensitive_text_to_be_present_in_element(locator, text_):
     # copied from Selenium. Can be useful not to worry about case, as this is often determined by styling
@@ -238,8 +238,8 @@ def case_insensitive_text_to_be_present_in_element(locator, text_):
 
     return _predicate
 
-def wait_for_case_insensitive_text(text, *selectorArgs):
-    wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text))
+def wait_for_case_insensitive_text(text, *selectorArgs, **kw):
+    wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text), **kw)
 
 def wait_and_click(*selectorArgs):
     for _ in range(5):

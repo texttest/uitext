@@ -260,13 +260,13 @@ def wait_and_click_test_id(test_id):
 def wait_for_download():
     downloadsDir = get_downloads_dir()
     if downloadsDir:
-        for _ in range(100):
+        for _ in range(wait_timeout * 10):
             files = [ fn for fn in os.listdir(downloadsDir) if not fn.endswith(".crdownload") ]
             if len(files) > 0:
                 return
             else:
                 time.sleep(0.1)
-    raise WebDriverException("No download files available after waiting 10 seconds")
+    raise WebDriverException("No download files available after waiting " + str(wait_timeout) + " seconds")
     
 def tick(factor=1):
     if delay:

@@ -8,6 +8,7 @@ from selenium.webdriver.common.by import By # @UnresolvedImport
 from selenium.webdriver.chrome.service import Service
 
 import os, sys, time
+import shlex
 
 driver = None
 orig_url = None
@@ -73,7 +74,7 @@ def create_driver():
         options.add_argument('headless')
     
     desired_capabilities = {}
-    desired_capabilities['loggingPrefs'] = {'browser':'ALL'}
+    desired_capabilities['goog:loggingPrefs'] = {'browser':'ALL'}
     try:
         driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options)
     except WebDriverException as e:
@@ -298,17 +299,21 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
         f.write(to_write)
     
 browser_console_file = sys.stderr
+loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 def close():
     global driver
     if driver != None:
         if delay:
             time.sleep(delay)
-        for entry in driver.get_log('browser'):
-            actualMessage = " ".join(entry['message'].split(" ")[2:])
-            try:
-                print(eval(actualMessage), file=browser_console_file)
-            except:
-                print("FAILED to parse " + entry['message'] + '!', file=browser_console_file)
+        for log_type in driver.log_types:
+            for entry in driver.get_log(log_type):
+                level = loglevels.get(entry['level'], 99)
+                log_file = sys.stderr if level > 25 else browser_console_file
+                try:
+                    parts = shlex.split(entry['message'])
+                    print(" ".join(parts[2:]), file=log_file)
+                except:
+                    print("FAILED to parse " + entry['message'] + '!', file=log_file)
         driver.quit()
         driver = None
     else:

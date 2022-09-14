@@ -131,7 +131,9 @@ class HtmlExtractParser(HTMLParser):
                 self.ignoreUntilCloseTag = name
                 self.ignoreRecursionLevel = 1
         elif name == "table":
-            if not self.text.endswith("\n"):
+            if len(self.currentSubParsers) > 0:
+                self.currentSubParsers[-1].addText("\n")  
+            elif not self.text.endswith("\n"):
                 self.text += "\n"
             self.currentSubParsers.append(TableParser())
         elif name == "select":

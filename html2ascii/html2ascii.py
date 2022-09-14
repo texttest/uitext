@@ -263,6 +263,8 @@ class HtmlExtractParser(HTMLParser):
         elif name == "li":
             self.liLevel -= 1
             self.addText("\n")
+        elif self.currentSubParsers and name != "img":
+            self.currentSubParsers[-1].endElement(name)
         elif name == "div":
             if self.level == self.modalDivLevel:
                 self.modalDivLevel = None
@@ -277,8 +279,6 @@ class HtmlExtractParser(HTMLParser):
             self.addText(")")
         elif name == "textarea":
             self.addText("\n" + "=" * 10)
-        elif self.currentSubParsers and name != "img":
-            self.currentSubParsers[-1].endElement(name)
         elif name == "script":
             self.inScript = False
         elif name in [ "h1", "h2", "h3", "h4" ]:
@@ -406,10 +406,15 @@ class TableParser:
                 self.currentRow.append("")
                 if name == "td" and "thead" not in self.activeElements:
                     self.currentRowIsHeader = False
+        elif name == "div" and self.currentRow is not None and len(self.currentRow) and \
+            self.currentRow[-1].strip() and not self.currentRow[-1].endswith("\n"):
+            self.currentRow[-1] += "\n"
 
     def endElement(self, name):
         if name in self.activeElements:  # Don't fail on duplicated end tags
             if self.currentRow is not None and self.isCell(name):
+                if self.currentRow[-1].endswith("\n"):
+                    self.currentRow[-1] = self.currentRow[-1].rstrip()
                 colspan = get_attr_value(self.activeElements[name], "colspan")
                 if colspan:
                     for _ in range(int(colspan) - 1):

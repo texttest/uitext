@@ -221,6 +221,9 @@ def wait_for_element(*selectorArgs, **kw):
     
 def wait_for_visible(*selectorArgs, **kw):
     wait_until(EC.visibility_of_element_located(selectorArgs), **kw)
+    
+def wait_for_invisible(*selectorArgs, **kw):
+    wait_until(EC.invisibility_of_element_located(selectorArgs), **kw)
 
 def wait_for_clickable(*selectorArgs, **kw):
     wait_until(EC.element_to_be_clickable(selectorArgs), **kw)

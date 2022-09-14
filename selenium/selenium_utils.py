@@ -245,7 +245,7 @@ def wait_for_case_insensitive_text(text, *selectorArgs, **kw):
 def wait_and_click(*selectorArgs):
     for _ in range(5):
         try:
-            element = wait_until(EC.element_to_be_clickable(selectorArgs))
+            element = wait_until(EC.element_to_be_clickable(selectorArgs), error=repr(selectorArgs[-1]) + " not clickable")
             time.sleep(0.5)
             element.click()
             return

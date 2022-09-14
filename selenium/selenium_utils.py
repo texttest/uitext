@@ -307,12 +307,18 @@ def close():
             time.sleep(delay)
         for log_type in driver.log_types:
             for entry in driver.get_log(log_type):
-                level = loglevels.get(entry['level'], 99)
-                log_file = sys.stderr if level > 25 else browser_console_file
+                level = entry['level']
+                levelNumber = loglevels.get(level, 99)
+                log_file = sys.stderr if levelNumber > 25 else browser_console_file
                 try:
-                    parts = shlex.split(entry['message'])
-                    print(" ".join(parts[2:]), file=log_file)
-                except:
+                    message = entry['message']
+                    parts = shlex.split(message)
+                    if parts[0].endswith(".js"): # temporary file reference, add as postfix
+                        message = " ".join(parts[2:])
+                        file = parts[0].rsplit("/")[-1]
+                        message += " (" + file + ":" + parts[1] + ")"
+                    print(level + ":", message, file=log_file)
+                except Exception:
                     print("FAILED to parse " + entry['message'] + '!', file=log_file)
         driver.quit()
         driver = None

@@ -126,17 +126,36 @@ def test_id_xpath(test_id):
 def find_element_by_test_id(test_id):
     return driver.find_element(By.XPATH, test_id_xpath(test_id))
 
-def enter_text(testid, text, enter=False):
+def enter_text(testid, text, replace=False, enter=False):
     textfield = find_element_by_test_id(testid)
-    enter_text_in_field(textfield, text, enter=enter)
+    change_text_in_field(textfield, text, replace=replace, enter=enter)
     
-def enter_text_in_field(textfield, text, enter=False):
+def change_text_in_field(textfield, text, replace=False, tab=False, enter=False):
     if delay:
         time.sleep(delay)
-    textfield.send_keys(Keys.CONTROL, "a")
-    textfield.send_keys(text)
+    if replace:
+        textfield.send_keys(Keys.CONTROL, "a")
+        textfield.send_keys(Keys.DELETE)
+    if text:
+        textfield.send_keys(text)
+    if tab:
+        textfield.send_keys(Keys.TAB)
     if enter:
         textfield.send_keys(Keys.ENTER)
+        
+def replace_text_at_cursor(text, enter=False):
+    activeElement = driver.switch_to.active_element
+    change_text_in_field(activeElement, text, replace=True, enter=enter)
+
+def enter_text_at_cursor(text, tab=False, enter=False):
+    activeElement = driver.switch_to.active_element
+    change_text_in_field(activeElement, text, tab=tab, enter=enter)
+
+def fill_in_form(*texts):
+    for i, text in enumerate(texts):
+        lastText = i == len(texts) - 1
+        enter_text_at_cursor(text, tab=not lastText, enter=lastText)
+
 
 def shared_prefix_length(text1, text2):
     for i, letter in enumerate(text1):
@@ -203,6 +222,15 @@ def find_shadow_content(shadow_root):
             if add_explicit_display_tags:
                 make_display_explicit(element)
     return content
+
+
+def search_in_dropdown(testid, text):
+    tick()
+    element = find_element_by_test_id(testid)
+    element.send_keys(text)
+    element.send_keys(Keys.DOWN)
+    element.send_keys(Keys.ENTER)
+
         
 def select_from_dropdown(testid, text):
     tick()

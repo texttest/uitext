@@ -237,11 +237,11 @@ def select_from_dropdown(testid, text):
     select = Select(find_element_by_test_id(testid))
     select.select_by_visible_text(text)
 
-def wait_until(condition, error=None):
+def wait_until(condition, error=None, element=None):
     try:
-        return WebDriverWait(driver, wait_timeout).until(condition)
+        return WebDriverWait(element or driver, wait_timeout).until(condition)
     except Exception as e:
-        print("Timed out!", error or driver, file=sys.stderr)
+        print("Timed out!", error or element or driver, file=sys.stderr)
         raise
     
 def wait_for_element(*selectorArgs, **kw):
@@ -273,10 +273,10 @@ def case_insensitive_text_to_be_present_in_element(locator, text_):
 def wait_for_case_insensitive_text(text, *selectorArgs, **kw):
     wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text), **kw)
 
-def wait_and_click(*selectorArgs):
+def wait_and_click(*selectorArgs, **kw):
     for _ in range(5):
         try:
-            element = wait_until(EC.element_to_be_clickable(selectorArgs), error=repr(selectorArgs[-1]) + " not clickable")
+            element = wait_until(EC.element_to_be_clickable(selectorArgs), error=repr(selectorArgs[-1]) + " not clickable", **kw)
             time.sleep(0.5)
             element.click()
             return

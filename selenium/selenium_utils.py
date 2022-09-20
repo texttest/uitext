@@ -9,6 +9,7 @@ from selenium.webdriver.chrome.service import Service
 
 import os, sys, time
 import shlex
+from datetime import datetime
 
 driver = None
 orig_url = None
@@ -339,8 +340,7 @@ def close():
         for log_type in driver.log_types:
             for entry in driver.get_log(log_type):
                 level = entry['level']
-                levelNumber = loglevels.get(level, 99)
-                log_file = sys.stderr if levelNumber > 25 else browser_console_file
+                serious = loglevels.get(level, 99) > 25
                 try:
                     message = entry['message']
                     parts = shlex.split(message)
@@ -348,9 +348,15 @@ def close():
                         message = " ".join(parts[2:])
                         file = parts[0].rsplit("/")[-1]
                         message += " (" + file + ":" + parts[1] + ")"
-                    print(level + ":", message, file=log_file)
+                    message = level + ": " + message
+                    if serious:
+                        print(message, file=sys.stderr)
+                    else:
+                        timestampSeconds = entry["timestamp"] / 1000
+                        timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
+                        print(timestamp, message, file=browser_console_file)
                 except Exception:
-                    print("FAILED to parse " + entry['message'] + '!', file=log_file)
+                    print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
         driver.quit()
         driver = None
     else:

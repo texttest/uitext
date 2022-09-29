@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys # @UnresolvedImport
 from selenium.common.exceptions import WebDriverException, StaleElementReferenceException # @UnresolvedImport
 from selenium.webdriver.common.by import By # @UnresolvedImport
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 
 import os, sys, time
 import shlex
@@ -246,19 +247,19 @@ def wait_until(condition, error=None, element=None):
         raise
     
 def wait_for_element(*selectorArgs, **kw):
-    wait_until(EC.presence_of_element_located(selectorArgs), **kw)
+    return wait_until(EC.presence_of_element_located(selectorArgs), **kw)
     
 def wait_for_visible(*selectorArgs, **kw):
-    wait_until(EC.visibility_of_element_located(selectorArgs), **kw)
+    return wait_until(EC.visibility_of_element_located(selectorArgs), **kw)
     
 def wait_for_invisible(*selectorArgs, **kw):
-    wait_until(EC.invisibility_of_element_located(selectorArgs), **kw)
+    return wait_until(EC.invisibility_of_element_located(selectorArgs), **kw)
 
 def wait_for_clickable(*selectorArgs, **kw):
-    wait_until(EC.element_to_be_clickable(selectorArgs), **kw)
+    return wait_until(EC.element_to_be_clickable(selectorArgs), **kw)
 
 def wait_for_ajax():
-    wait_until(lambda d: d.execute_script("return jquery.active == 0"), error="Ajax operation did not complete")
+    return wait_until(lambda d: d.execute_script("return jquery.active == 0"), error="Ajax operation did not complete")
 
 def case_insensitive_text_to_be_present_in_element(locator, text_):
     # copied from Selenium. Can be useful not to worry about case, as this is often determined by styling
@@ -272,7 +273,7 @@ def case_insensitive_text_to_be_present_in_element(locator, text_):
     return _predicate
 
 def wait_for_case_insensitive_text(text, *selectorArgs, **kw):
-    wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text), **kw)
+    return wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text), **kw)
 
 def wait_and_click(*selectorArgs, **kw):
     for _ in range(5):
@@ -280,7 +281,7 @@ def wait_and_click(*selectorArgs, **kw):
             element = wait_until(EC.element_to_be_clickable(selectorArgs), error=repr(selectorArgs[-1]) + " not clickable", **kw)
             time.sleep(0.5)
             element.click()
-            return
+            return element
         except WebDriverException as e:
             if 'is not clickable at point' in str(e):
                 time.sleep(0.1)
@@ -288,7 +289,7 @@ def wait_and_click(*selectorArgs, **kw):
                 raise
 
 def wait_and_click_test_id(test_id):
-    wait_and_click(By.XPATH, test_id_xpath(test_id))
+    return wait_and_click(By.XPATH, test_id_xpath(test_id))
 
 def wait_for_download():
     downloadsDir = get_downloads_dir()
@@ -301,6 +302,12 @@ def wait_for_download():
                 time.sleep(0.1)
     raise WebDriverException("No download files available after waiting " + str(wait_timeout) + " seconds")
     
+def wait_and_hover_on_element(*selectorArgs):
+    action = ActionChains(driver)
+    element = wait_for_visible(*selectorArgs)
+    action.move_to_element(element).perform()
+    return element
+
 def tick(factor=1):
     if delay:
         time.sleep(delay * factor)

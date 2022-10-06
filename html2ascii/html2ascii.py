@@ -37,7 +37,7 @@ class ModalAbort(Exception):
 
 class HtmlExtractParser(HTMLParser):
     voidTags = [ 'area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'keygen', 'link', 'meta', 'param', 'source', 'track', 'wbr' ]
-    def __init__(self, toIgnore=set(), iconProperties=set(), show_invisible=False):
+    def __init__(self, toIgnore=set(), iconProperties=set(), modalProperties=set(), show_invisible=False):
         HTMLParser.__init__(self)
         self.currentSubParsers = []
         self.inBody = False
@@ -53,6 +53,7 @@ class HtmlExtractParser(HTMLParser):
         self.afterDataText = ""
         self.propertiesToIgnore = toIgnore
         self.iconProperties = iconProperties
+        self.modalProperties = modalProperties
         self.ignoreUntilCloseTag = ""
         self.ignoreRecursionLevel = 0
         self.show_invisible = show_invisible
@@ -210,7 +211,7 @@ class HtmlExtractParser(HTMLParser):
             elif name == "div":
                 if not self.in_flex() and not self.text.endswith("\n"):
                     self.beforeDataText = "\n"
-                if elementProperties and "modal" in elementProperties:
+                if elementProperties and any((className in elementProperties for className in self.modalProperties)):
                     self.modalDivLevel = self.level
                     self.reset_for_dialog()
                     self.addText("\n" + " Modal dialog ".center(50, "_") + "\n")
@@ -462,13 +463,15 @@ def parseList(text):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Program to write HTML as ASCII art, suitable for e.g. TextTest testing')
-    parser.add_argument('--ignore', default="", help='Comma-separated list of HTML element properties to ignore')
-    parser.add_argument('--icons', default="", help='Comma-separated list of HTML element properties to treat as icons')
+    parser.add_argument('--ignore', default="", help='Comma-separated list of CSS classes to ignore')
+    parser.add_argument('--icons', default="", help='Comma-separated list of CSS classes to treat as icons')
+    parser.add_argument('--modals', default="", help='Comma-separated list of CSS classes to treat as modal dialogs')
     parser.add_argument('--show-invisible', action='store_true', help='Show all elements, even if invisible. Mainly useful for simplifying tests by avoiding extra clicks')
     parser.add_argument('filenames', nargs=argparse.REMAINDER)
     args = parser.parse_args()
     toIgnore = parseList(args.ignore)
     iconProperties = parseList(args.icons)
+    modalProperties = parseList(args.modals)
     multiple = len(args.filenames) > 1
     for i, filename in enumerate(args.filenames):
         if multiple and i > 0:
@@ -480,5 +483,5 @@ if __name__ == '__main__':
             stage = " " + stage + " "
             print(stage.center(30, "-"))
         text = open(filename).read()
-        parser = HtmlExtractParser(toIgnore, iconProperties, args.show_invisible)
+        parser = HtmlExtractParser(toIgnore, iconProperties, modalProperties, args.show_invisible)
         print(parser.parse(text))

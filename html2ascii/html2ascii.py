@@ -94,7 +94,8 @@ class HtmlExtractParser(HTMLParser):
             return ""
 
     def is_invisible(self, attrs, display):
-        return not self.show_invisible and (display == "none" or get_attr_value(attrs, "visibility") == "hidden")
+        return not self.show_invisible and \
+            (display == "none" or get_attr_value(attrs, "visibility") == "hidden" or get_attr_value(attrs, "hidden") is not None)
 
     def is_block_display(self, name, display):
         # ignore when we expect it anyway

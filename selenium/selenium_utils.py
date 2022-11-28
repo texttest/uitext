@@ -19,8 +19,8 @@ test_id_key = "id"
 add_explicit_display_tags = False
 wait_timeout = 30
 
-def run_with_usecase(url):
-    setup(url)
+def run_with_usecase(url, **kw):
+    setup(url, **kw)
     run_usecase()
     
 def run_usecase():
@@ -40,11 +40,15 @@ def get_downloads_dir():
             os.mkdir(downloadsDir)
         return downloadsDir
 
-def setup(url):
-    set_original_url(url)
+def setup(url, **kw):
+    set_original_url(url, **kw)
     navigate(url)
 
 def create_driver():    
+    # chrome is default - we can fetch the logs which leads to better testing
+    create_chrome_driver()
+    
+def create_chrome_driver():    
     global driver
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
@@ -89,12 +93,28 @@ def create_driver():
                 raise e
         else:
             raise
+        
+def create_firefox_driver():
+    global driver
+    options = webdriver.FirefoxOptions()
+    downloadsDir = get_downloads_dir()
+    if downloadsDir:
+        options.set_preference("browser.download.folderList", 2)
+        options.set_preference("browser.download.manager.showWhenStarting", False)
+        options.set_preference("browser.download.dir", downloadsDir)
+        options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
+    if not delay:
+        options.headless = True
+    driver = webdriver.Firefox(options=options)
     
 def add_to_session_storage(key, value):
     driver.execute_script("sessionStorage.setItem('" + key + "', '" + value.replace("'", "\\'") + "');")
 
-def set_original_url(url):
-    create_driver()
+def set_original_url(url, browser="chrome"):
+    if browser == "firefox":
+        create_firefox_driver()
+    else:
+        create_chrome_driver()
     global orig_url
     orig_url = url
     
@@ -344,26 +364,28 @@ def close():
     if driver != None:
         if delay:
             time.sleep(delay)
-        for log_type in driver.log_types:
-            for entry in driver.get_log(log_type):
-                level = entry['level']
-                serious = loglevels.get(level, 99) > 25
-                try:
-                    message = entry['message']
-                    parts = shlex.split(message)
-                    if parts[0].endswith(".js"): # temporary file reference, add as postfix
-                        message = " ".join(parts[2:])
-                        file = parts[0].rsplit("/")[-1]
-                        message += " (" + file + ":" + parts[1] + ")"
-                    message = level + ": " + message
-                    if serious:
-                        print(message, file=sys.stderr)
-                    else:
-                        timestampSeconds = entry["timestamp"] / 1000
-                        timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
-                        print(timestamp, message, file=browser_console_file)
-                except Exception:
-                    print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
+        if isinstance(driver, webdriver.Chrome):
+            # only chrome allows fetching browser logs
+            for log_type in driver.log_types:
+                for entry in driver.get_log(log_type):
+                    level = entry['level']
+                    serious = loglevels.get(level, 99) > 25
+                    try:
+                        message = entry['message']
+                        parts = shlex.split(message)
+                        if parts[0].endswith(".js"): # temporary file reference, add as postfix
+                            message = " ".join(parts[2:])
+                            file = parts[0].rsplit("/")[-1]
+                            message += " (" + file + ":" + parts[1] + ")"
+                        message = level + ": " + message
+                        if serious:
+                            print(message, file=sys.stderr)
+                        else:
+                            timestampSeconds = entry["timestamp"] / 1000
+                            timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
+                            print(timestamp, message, file=browser_console_file)
+                    except Exception:
+                        print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
         driver.quit()
         driver = None
     else:

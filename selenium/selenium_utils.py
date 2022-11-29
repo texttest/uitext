@@ -48,23 +48,16 @@ def create_driver():
     # chrome is default - we can fetch the logs which leads to better testing
     create_chrome_driver()
     
-def create_chrome_driver():    
-    global driver
-    options = webdriver.ChromeOptions()
-    options.accept_insecure_certs = True
+def add_chromium_default_download(options, downloadsDir):
+    prefs = { "download.default_directory": downloadsDir,
+              "download.prompt_for_download": False,
+              "download.directory_upgrade": True,
+              "safebrowsing_for_trusted_sources_enabled": False,
+              "safebrowsing.enabled": False }
+    options.add_experimental_option("prefs", prefs)
+
+def add_chromium_screen_options(options, delay):
     screen_size = os.getenv("USECASE_SCREEN_SIZE")
-    browser_lang = os.getenv("USECASE_UI_LANGUAGE")
-    if browser_lang:
-        options.add_argument("--lang=" + browser_lang)
-    # if files get downloaded, make sure they get downloaded locally
-    downloadsDir = get_downloads_dir()
-    if downloadsDir:
-        prefs = { "download.default_directory": downloadsDir,
-                  "download.prompt_for_download": False,
-                  "download.directory_upgrade": True,
-                  "safebrowsing_for_trusted_sources_enabled": False,
-                  "safebrowsing.enabled": False }
-        options.add_experimental_option("prefs", prefs)
     if delay:
         if screen_size:
             options.add_argument("--window-size=" + screen_size)
@@ -78,6 +71,20 @@ def create_chrome_driver():
         screen_size = screen_size or "1920,1080"
         options.add_argument("--window-size=" + screen_size)
         options.add_argument('headless')
+
+    
+def create_chrome_driver():    
+    global driver
+    options = webdriver.ChromeOptions()
+    options.accept_insecure_certs = True
+    browser_lang = os.getenv("USECASE_UI_LANGUAGE")
+    if browser_lang:
+        options.add_argument("--lang=" + browser_lang)
+    # if files get downloaded, make sure they get downloaded locally
+    downloadsDir = get_downloads_dir()
+    if downloadsDir:
+        add_chromium_default_download(options, downloadsDir)
+    add_chromium_screen_options(options, delay)
     
     desired_capabilities = {}
     desired_capabilities['goog:loggingPrefs'] = {'browser':'ALL'}
@@ -107,12 +114,25 @@ def create_firefox_driver():
         options.headless = True
     driver = webdriver.Firefox(options=options)
     
+def create_edge_driver():
+    global driver
+    options = webdriver.EdgeOptions()
+    options.use_chromium = True
+    options.accept_insecure_certs = True
+    downloadsDir = get_downloads_dir()
+    if downloadsDir:
+        add_chromium_default_download(options, downloadsDir)
+    add_chromium_screen_options(options, delay)
+    driver = webdriver.Edge(options=options)
+    
 def add_to_session_storage(key, value):
     driver.execute_script("sessionStorage.setItem('" + key + "', '" + value.replace("'", "\\'") + "');")
 
 def set_original_url(url, browser="chrome"):
     if browser == "firefox":
         create_firefox_driver()
+    elif browser == "edge":
+        create_edge_driver()
     else:
         create_chrome_driver()
     global orig_url

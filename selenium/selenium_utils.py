@@ -111,7 +111,11 @@ def create_firefox_driver():
         options.set_preference("browser.download.dir", downloadsDir)
         options.set_preference("browser.helperApps.neverAsk.saveToDisk", "application/x-gzip")
     if not delay:
+        screen_size = os.getenv("USECASE_SCREEN_SIZE", "1920,1080")
+        width, height = screen_size.split(",")
         options.headless = True
+        options.add_argument("--width=" + width)
+        options.add_argument("--height=" + height)
     driver = webdriver.Firefox(options=options)
     
 def create_edge_driver():

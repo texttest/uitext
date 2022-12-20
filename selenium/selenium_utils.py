@@ -4,7 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImp
 from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
 from selenium.common.exceptions import WebDriverException, StaleElementReferenceException # @UnresolvedImport
-from selenium.webdriver.common.by import By # @UnresolvedImport
+from selenium.webdriver.common.by import By as SeleniumBy # @UnresolvedImport
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 
@@ -15,7 +15,11 @@ from datetime import datetime
 driver = None
 orig_url = None
 delay = float(os.getenv("USECASE_REPLAY_DELAY", "0"))
-test_id_key = "id"
+
+test_id_key = "data-test-id"
+class By(SeleniumBy):
+    TEST_ID = "test id"
+
 add_explicit_display_tags = False
 wait_timeout = 30
 
@@ -172,8 +176,17 @@ def test_id_xpath(test_id):
 def find_element_by_test_id(test_id):
     return driver.find_element(By.XPATH, test_id_xpath(test_id))
 
-def enter_text(testid, text, replace=False, enter=False):
-    textfield = find_element_by_test_id(testid)
+def make_selector(by, value):
+    if by == By.TEST_ID:
+        return By.XPATH, test_id_xpath(value)
+    else:
+        return by, value  
+
+def find_element(by, value):
+    return driver.find_element(*make_selector(by, value))
+
+def enter_text(by, value, text, replace=False, enter=False):
+    textfield = find_element(by, value)
     change_text_in_field(textfield, text, replace=replace, enter=enter)
     
 def change_text_in_field(textfield, text, replace=False, tab=False, enter=False):
@@ -222,7 +235,7 @@ def edit_text_in_field(textfield, text, enter=False):
 def find_shadow_dom_info(*selectorArgs):
     info = []
     if len(selectorArgs):
-        for element in driver.find_elements(*selectorArgs):
+        for element in driver.find_elements(*make_selector(*selectorArgs)):
             content = find_shadow_content(element.shadow_root)
             info.append((element, content))
         add_all_display_tags()
@@ -270,17 +283,17 @@ def find_shadow_content(shadow_root):
     return content
 
 
-def search_in_dropdown(testid, text):
+def search_in_dropdown(by, value, text):
     tick()
-    element = find_element_by_test_id(testid)
+    element = find_element(by, value)
     element.send_keys(text)
     element.send_keys(Keys.DOWN)
     element.send_keys(Keys.ENTER)
 
         
-def select_from_dropdown(testid, text):
+def select_from_dropdown(by, value, text):
     tick()
-    select = Select(find_element_by_test_id(testid))
+    select = Select(find_element(by, value))
     select.select_by_visible_text(text)
 
 def wait_until(condition, error=None, element=None):
@@ -291,16 +304,16 @@ def wait_until(condition, error=None, element=None):
         raise
     
 def wait_for_element(*selectorArgs, **kw):
-    return wait_until(EC.presence_of_element_located(selectorArgs), **kw)
+    return wait_until(EC.presence_of_element_located(make_selector(*selectorArgs)), **kw)
     
 def wait_for_visible(*selectorArgs, **kw):
-    return wait_until(EC.visibility_of_element_located(selectorArgs), **kw)
+    return wait_until(EC.visibility_of_element_located(make_selector(*selectorArgs)), **kw)
     
 def wait_for_invisible(*selectorArgs, **kw):
-    return wait_until(EC.invisibility_of_element_located(selectorArgs), **kw)
+    return wait_until(EC.invisibility_of_element_located(make_selector(*selectorArgs)), **kw)
 
 def wait_for_clickable(*selectorArgs, **kw):
-    return wait_until(EC.element_to_be_clickable(selectorArgs), **kw)
+    return wait_until(EC.element_to_be_clickable(make_selector(*selectorArgs)), **kw)
 
 def wait_for_ajax():
     return wait_until(lambda d: d.execute_script("return jquery.active == 0"), error="Ajax operation did not complete")
@@ -317,12 +330,12 @@ def case_insensitive_text_to_be_present_in_element(locator, text_):
     return _predicate
 
 def wait_for_case_insensitive_text(text, *selectorArgs, **kw):
-    return wait_until(case_insensitive_text_to_be_present_in_element(selectorArgs, text), **kw)
+    return wait_until(case_insensitive_text_to_be_present_in_element(make_selector(*selectorArgs), text), **kw)
 
 def wait_and_click(*selectorArgs, **kw):
     for _ in range(5):
         try:
-            element = wait_until(EC.element_to_be_clickable(selectorArgs), error=repr(selectorArgs[-1]) + " not clickable", **kw)
+            element = wait_until(EC.element_to_be_clickable(make_selector(*selectorArgs)), error=repr(selectorArgs[-1]) + " not clickable", **kw)
             time.sleep(0.5)
             element.click()
             return element
@@ -331,9 +344,6 @@ def wait_and_click(*selectorArgs, **kw):
                 time.sleep(0.1)
             else:
                 raise
-
-def wait_and_click_test_id(test_id):
-    return wait_and_click(By.XPATH, test_id_xpath(test_id))
 
 def wait_for_download():
     downloadsDir = get_downloads_dir()
@@ -348,7 +358,7 @@ def wait_for_download():
     
 def wait_and_hover_on_element(*selectorArgs):
     action = ActionChains(driver)
-    element = wait_for_visible(*selectorArgs)
+    element = wait_for_visible(*make_selector(*selectorArgs))
     action.move_to_element(element).perform()
     return element
 

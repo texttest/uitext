@@ -43,6 +43,7 @@ class HtmlExtractParser(HTMLParser):
         self.inBody = False
         self.inScript = False
         self.inSuperscript = False
+        self.inStyle = False
         self.linkStart = None
         self.text = ""
         self.liLevel = 0
@@ -54,6 +55,7 @@ class HtmlExtractParser(HTMLParser):
         self.propertiesToIgnore = toIgnore
         self.iconProperties = iconProperties
         self.modalProperties = modalProperties
+        self.sliderProperties = []
         self.ignoreUntilCloseTag = ""
         self.ignoreRecursionLevel = 0
         self.show_invisible = show_invisible
@@ -93,10 +95,23 @@ class HtmlExtractParser(HTMLParser):
         else:
             return ""
 
-    def is_invisible(self, attrs, display):
-        return not self.show_invisible and \
-            (display == "none" or get_attr_value(attrs, "visibility") == "hidden" or get_attr_value(attrs, "hidden") is not None)
-
+    def is_invisible(self, attrs, display, elementProperties):
+        if self.show_invisible:
+            return False
+        
+        return display == "none" or \
+            get_attr_value(attrs, "visibility") == "hidden" or \
+            get_attr_value(attrs, "hidden") is not None or \
+            self.is_hidden_slider(attrs, elementProperties)
+            
+    def is_hidden_slider(self, attrs, elementProperties):
+        for sliderAttr, sliderClasses, expandedCls in self.sliderProperties:
+            if sliderAttr and get_attr_value(attrs, sliderAttr) is None:
+                continue
+            if expandedCls not in elementProperties and elementProperties.issuperset(sliderClasses):
+                return True
+        return False
+        
     def is_block_display(self, name, display):
         # ignore when we expect it anyway
         if name in ("div", "h1", "h2", "h3", "h4", "span", "button", "th", "td", "input"):
@@ -127,7 +142,7 @@ class HtmlExtractParser(HTMLParser):
         if self.ignoreUntilCloseTag:
             if self.ignoreUntilCloseTag == name:
                 self.ignoreRecursionLevel += 1
-        elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs, display) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
+        elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs, display, elementProperties) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
             # if the name is a void tag like "input", close tag will never come. Ignore this but don't set anything else.
             if name not in self.voidTags:
                 self.ignoreUntilCloseTag = name
@@ -216,6 +231,8 @@ class HtmlExtractParser(HTMLParser):
                     self.modalDivLevel = self.level
                     self.reset_for_dialog()
                     self.addText("\n" + " Modal dialog ".center(50, "_") + "\n")
+            elif name == "style":
+                self.inStyle = True
             elif self.text.strip() and name in [ "h1", "h2", "h3", "h4" ]:
                 while not self.text.endswith("\n\n"):
                     self.text += "\n"
@@ -285,6 +302,8 @@ class HtmlExtractParser(HTMLParser):
             self.addText("\n" + "=" * 10)
         elif name == "script":
             self.inScript = False
+        elif name == "style":
+            self.inStyle = False
         elif name in [ "h1", "h2", "h3", "h4" ]:
             self.text += getUnderline(self.text)
         elif name == "a":
@@ -361,7 +380,46 @@ class HtmlExtractParser(HTMLParser):
                 if self.needs_space(text, self.text):
                     self.text += " "
                 self.text += text
+        elif self.inStyle:
+            for dimension in [ "width", "height" ]:
+                self.checkStyleForSliders(text, dimension)
+            
+    def checkStyleForSliders(self, text, dimension):
+        parts = text.split(dimension + ":")
+        if len(parts) >= 3:
+            collapsed, expanded = self.parseForSliders(parts)
+            for collClasses, collAttr in collapsed:
+                for expClasses, expAttr in expanded:
+                    if collAttr == expAttr and len(expClasses) == len(collClasses) + 1:
+                        diff = expClasses.difference(collClasses)
+                        if len(diff) == 1:
+                            self.sliderProperties.append((collAttr, collClasses, diff.pop()))
 
+    def parseForSliders(self, parts):
+        collapsed, expanded = [], []
+        for ix in range(len(parts) - 1):
+            size = parts[ix + 1].split()[0].strip()
+            lastChar = parts[ix][-1]
+            if lastChar not in " ;{":
+                continue
+            bracketPos = parts[ix].rfind("{")
+            prevCloseBracket = parts[ix].rfind("}", 0, bracketPos)
+            cssDesc = parts[ix][prevCloseBracket + 1:bracketPos].strip()
+            if cssDesc.count("[") <= 1:
+                cssClasses, cssAttr = self.splitAttr(cssDesc)
+                if size.startswith("0px"):
+                    collapsed.append((cssClasses, cssAttr))
+                elif len(cssClasses) > 1:
+                    expanded.append((cssClasses, cssAttr))
+        return collapsed, expanded
+    
+    def splitAttr(self, text):
+        if "[" in text:
+            parts = text.split("[")
+            return set(parts[0].lstrip(".").split(".")), parts[1].rstrip("]")
+        else:
+            return set(text.lstrip(".").split(".")), None
+                    
 class SelectParser:
     def __init__(self):
         self.options = []

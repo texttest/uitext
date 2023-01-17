@@ -102,9 +102,12 @@ class GridFormatterWithHeader:
         colWidths = GridFormatter(self.headerRows + self.rows, self.columnCount, allowOverlap=self.allowHeaderOverlap).findColumnWidths()
         self.adjustForMinFieldWidths(colWidths)
         header = GridFormatter(self.headerRows, self.columnCount).formatCellsInGrid(colWidths)
-        body = GridFormatter(self.rows, self.columnCount).formatCellsInGrid(colWidths)
         line = "_" * sum(colWidths) + "\n"
-        return self.formatWithSeparators(header, body, line)
+        if len(self.rows) > 0:
+            body = GridFormatter(self.rows, self.columnCount).formatCellsInGrid(colWidths)
+            return self.formatWithSeparators(header, body, line)
+        else:
+            return line + header + "\n" + line
 
     def adjustForMinFieldWidths(self, colWidths):
         for i, columnName in enumerate(self.headerRows[0]):

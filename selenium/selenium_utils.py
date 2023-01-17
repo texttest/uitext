@@ -266,7 +266,8 @@ def make_display_explicit(element):
     try:
         display = element.value_of_css_property("display")
         if (display in ["flex", "inline-block"] and element.tag_name != "span") or \
-            (display == "block" and element.tag_name != "div"):
+            (display == "block" and element.tag_name != "div") or \
+            (display == "none" and element.tag_name not in [ "script", "style", "head", "meta", "title", "base", "link" ]):
             driver.execute_script("arguments[0].setAttribute('data-test-explicit-display',arguments[1])", element, display)
     except StaleElementReferenceException:
         # if something is stale, ignore it

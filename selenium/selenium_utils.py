@@ -74,7 +74,7 @@ def add_chromium_screen_options(options, delay):
     else:
         screen_size = screen_size or "1920,1080"
         options.add_argument("--window-size=" + screen_size)
-        options.add_argument('headless')
+        options.add_argument('--headless=new')
 
     
 def create_chrome_driver():    

@@ -145,6 +145,9 @@ def set_original_url(url, browser="chrome"):
         create_chrome_driver()
     global orig_url
     orig_url = url
+    # Any warning logs that get written before we navigate to the page under test should by definition not affect the test!
+    fetch_logs(serious_only=True, serious_level='ERROR')
+
     
 def navigate(url):
     if not url.startswith("http"):
@@ -395,33 +398,39 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
     
 browser_console_file = sys.stderr
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
+
+def fetch_logs(serious_only, serious_level='WARNING'):
+    if isinstance(driver, webdriver.Chrome):
+        # only chrome allows fetching browser logs
+        serious_level_number = loglevels.get(serious_level)
+        for log_type in driver.log_types:
+            for entry in driver.get_log(log_type):
+                level = entry['level']
+                serious = loglevels.get(level, 99) >= serious_level_number
+                try:
+                    message = entry['message']
+                    parts = shlex.split(message)
+                    if parts[0].endswith(".js"): # temporary file reference, add as postfix
+                        message = " ".join(parts[2:])
+                        file = parts[0].rsplit("/")[-1]
+                        message += " (" + file + ":" + parts[1] + ")"
+                    message = level + ": " + message
+                    if serious:
+                        print(message, entry, file=sys.stderr)
+                    elif not serious_only:
+                        timestampSeconds = entry["timestamp"] / 1000
+                        timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
+                        print(timestamp, message, file=browser_console_file)
+                except Exception:
+                    print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
+    
+
 def close():
     global driver
     if driver != None:
         if delay:
             time.sleep(delay)
-        if isinstance(driver, webdriver.Chrome):
-            # only chrome allows fetching browser logs
-            for log_type in driver.log_types:
-                for entry in driver.get_log(log_type):
-                    level = entry['level']
-                    serious = loglevels.get(level, 99) > 25
-                    try:
-                        message = entry['message']
-                        parts = shlex.split(message)
-                        if parts[0].endswith(".js"): # temporary file reference, add as postfix
-                            message = " ".join(parts[2:])
-                            file = parts[0].rsplit("/")[-1]
-                            message += " (" + file + ":" + parts[1] + ")"
-                        message = level + ": " + message
-                        if serious:
-                            print(message, file=sys.stderr)
-                        else:
-                            timestampSeconds = entry["timestamp"] / 1000
-                            timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
-                            print(timestamp, message, file=browser_console_file)
-                    except Exception:
-                        print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
+        fetch_logs(serious_only=False)
         driver.quit()
         driver = None
     else:

@@ -354,7 +354,7 @@ def wait_for_download():
     downloadsDir = get_downloads_dir()
     if downloadsDir:
         for _ in range(wait_timeout * 10):
-            files = [ fn for fn in os.listdir(downloadsDir) if not fn.endswith(".crdownload") ]
+            files = [ fn for fn in os.listdir(downloadsDir) if not fn.endswith(".crdownload") and not fn.endswith(".tmp") ]
             if len(files) > 0:
                 return
             else:

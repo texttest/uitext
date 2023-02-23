@@ -416,7 +416,7 @@ def fetch_logs(serious_only, serious_level='WARNING'):
                         message += " (" + file + ":" + parts[1] + ")"
                     message = level + ": " + message
                     if serious:
-                        print(message, entry, file=sys.stderr)
+                        print(message, file=sys.stderr)
                     elif not serious_only:
                         timestampSeconds = entry["timestamp"] / 1000
                         timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()

@@ -132,6 +132,9 @@ def create_edge_driver():
         add_chromium_default_download(options, downloadsDir)
     add_chromium_screen_options(options, delay)
     driver = webdriver.Edge(options=options)
+
+def get_from_session_storage(key):
+    return driver.execute_script("return sessionStorage.getItem('" + key + "');")
     
 def add_to_session_storage(key, value):
     driver.execute_script("sessionStorage.setItem('" + key + "', '" + value.replace("'", "\\'") + "');")

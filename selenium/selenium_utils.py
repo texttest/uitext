@@ -304,9 +304,9 @@ def select_from_dropdown(by, value, text):
     select = Select(find_element(by, value))
     select.select_by_visible_text(text)
 
-def wait_until(condition, error=None, element=None):
+def wait_until(condition, error=None, element=None, **kw):
     try:
-        return WebDriverWait(element or driver, wait_timeout).until(condition)
+        return WebDriverWait(element or driver, wait_timeout, **kw).until(condition)
     except Exception as e:
         print("Timed out!", error or element or driver, file=sys.stderr)
         raise
@@ -324,7 +324,10 @@ def wait_for_clickable(*selectorArgs, **kw):
     return wait_until(EC.element_to_be_clickable(make_selector(*selectorArgs)), **kw)
 
 def wait_for_ajax():
-    return wait_until(lambda d: d.execute_script("return jquery.active == 0"), error="Ajax operation did not complete")
+    return wait_for_background_flag("jquery.active", error="Ajax operation did not complete")
+
+def wait_for_background_flag(flag_name, error="Background operation did not complete", **kw):
+    return wait_until(lambda d: d.execute_script("return " + flag_name + " == 0"), error=error, **kw)
 
 def case_insensitive_text_to_be_present_in_element(locator, text_):
     # copied from Selenium. Can be useful not to worry about case, as this is often determined by styling

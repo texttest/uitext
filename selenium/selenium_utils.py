@@ -355,17 +355,6 @@ def wait_and_click(*selectorArgs, **kw):
                 time.sleep(0.1)
             else:
                 raise
-
-def wait_for_download():
-    downloadsDir = get_downloads_dir()
-    if downloadsDir:
-        for _ in range(wait_timeout * 10):
-            files = [ fn for fn in os.listdir(downloadsDir) if not fn.endswith(".crdownload") and not fn.endswith(".tmp") ]
-            if len(files) > 0:
-                return
-            else:
-                time.sleep(0.1)
-    raise WebDriverException("No download files available after waiting " + str(wait_timeout) + " seconds")
     
 def wait_and_hover_on_element(*selectorArgs):
     action = ActionChains(driver)
@@ -383,6 +372,23 @@ wait_handler = None
 def wait_for_checkpoint(checkpoint_name):
     if wait_handler:
         wait_handler.wait_for_checkpoint(checkpoint_name)
+        
+def file_is_complete_download(fn):
+    if wait_handler:
+        return wait_handler.file_is_complete_download(fn)
+    else:
+        return not fn.endswith(".crdownload") and not fn.endswith(".tmp")
+
+def wait_for_download():
+    downloadsDir = get_downloads_dir()
+    if downloadsDir:
+        for _ in range(wait_timeout * 10):
+            files = [ fn for fn in os.listdir(downloadsDir) if file_is_complete_download(fn) ]
+            if len(files) > 0:
+                return
+            else:
+                time.sleep(0.1)
+    raise WebDriverException("No download files available after waiting " + str(wait_timeout) + " seconds")
 
 def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
     if delay:

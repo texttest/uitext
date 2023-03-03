@@ -260,7 +260,7 @@ def find_shadow_dom_info(*selectorArgs):
 
 def add_all_display_tags():
     if add_explicit_display_tags:
-        for element in driver.find_elements(By.CSS_SELECTOR, "*"):
+        for element in driver.find_elements(By.CSS_SELECTOR, add_explicit_display_tags):
             make_display_explicit(element)
 
 # get all 'root elements' whose parent is themselves.
@@ -286,8 +286,6 @@ def find_shadow_content(shadow_root):
             parent = element.find_element(By.XPATH, ".//parent::*")
             if parent.id == element.id:
                 content.append(element)
-            if add_explicit_display_tags:
-                make_display_explicit(element)
     return content
 
 

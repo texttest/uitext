@@ -8,7 +8,7 @@ from selenium.webdriver.common.by import By as SeleniumBy # @UnresolvedImport
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 
-import os, sys, time
+import os, sys, time, socket
 import shlex
 from datetime import datetime
 
@@ -447,6 +447,9 @@ def close():
         if delay:
             time.sleep(delay)
         fetch_logs(serious_only=False)
+        # Selenium has a nasty habit of just hanging on quit if the driver or browser isn't responsive
+        # give tests a chance to catch this and clean up
+        socket.setdefaulttimeout(30)
         driver.quit()
         driver = None
     else:

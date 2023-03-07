@@ -79,6 +79,13 @@ def add_chromium_screen_options(options, delay):
     
 def create_chrome_driver():    
     global driver
+    try:
+        # If we have installed the autoinstaller, should use it!
+        import chromedriver_autoinstaller
+        chromedriver_autoinstaller.install()
+    except ModuleNotFoundError:
+        pass
+    
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")

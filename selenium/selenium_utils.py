@@ -22,9 +22,6 @@ class By(SeleniumBy):
 
 add_explicit_display_tags = False
 wait_timeout = 30
-# Selenium has a nasty habit of just hanging on quit if the driver or browser isn't responsive
-# give tests a chance to catch this and clean up
-socket.setdefaulttimeout(30)        
 
 def run_with_usecase(url, **kw):
     setup(url, **kw)
@@ -450,6 +447,9 @@ def close():
         if delay:
             time.sleep(delay)
         fetch_logs(serious_only=False)
+        # Selenium has a nasty habit of just hanging on quit if the driver or browser isn't responsive
+        # give tests a chance to catch this and clean up
+        socket.setdefaulttimeout(30)
         driver.quit()
         driver = None
     else:

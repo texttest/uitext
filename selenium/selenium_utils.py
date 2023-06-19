@@ -146,6 +146,12 @@ def get_from_session_storage(key):
 def add_to_session_storage(key, value):
     driver.execute_script("sessionStorage.setItem('" + key + "', '" + value.replace("'", "\\'") + "');")
 
+def add_capturemock_cookie(value):
+    if orig_url and not driver.current_url.startswith(orig_url):
+        navigate("/favicon.ico") # somewhere so we can set cookies
+  
+    driver.add_cookie({"name": "capturemock_proxy_target", "value" : value })
+
 def set_original_url(url, browser="chrome"):
     if browser == "firefox":
         create_firefox_driver()

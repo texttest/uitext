@@ -36,21 +36,24 @@ def quotes_matched_in_line(origText):
     pos = origText.rfind("\n") + 1
     return origText[pos:].count("'") % 2 == 0
 
-def needs_space(text, origText):
+def adapt_spaces(text, origText):
     if len(origText) == 0 or len(text) == 0:
-        return False
+        return text
 
     newChar = text[0]
     lastChar = origText[-1]
+    if newChar == " " and lastChar == " ":
+        return text.lstrip(" ")
+    
     newCharContent = newChar.isalnum() or newChar in '(='
     lastCharContent = lastChar.isalnum() or lastChar in '):'
     if newCharContent == lastCharContent:
-        return newCharContent
+        return " " + text if newCharContent else text
 
     if newChar != "'" and lastChar != "'":
-        return False
+        return text
 
-    return quotes_matched_in_line(origText)
+    return " " + text if quotes_matched_in_line(origText) else text
 
 
 class ModalAbort(Exception):
@@ -404,9 +407,8 @@ class HtmlExtractParser(HTMLParser):
             self.currentSubParsers[-1].addText(text)
         elif self.inBody and not self.inScript:
             if not text.isspace() or shouldAddWhitespace(text, self.text):
-                if needs_space(text, self.text):
-                    self.text += " "
-                self.text += text
+                adapted_text = adapt_spaces(text, self.text)
+                self.text += adapted_text
         elif self.inStyle:
             for dimension in [ "width", "height" ]:
                 self.checkStyleForSliders(text, dimension)
@@ -543,9 +545,8 @@ class TableParser:
         if self.currentRow is not None:
             if len(self.currentRow):
                 if text.strip() or shouldAddWhitespace(text, self.currentRow[-1]):
-                    if needs_space(text, self.currentRow[-1]):
-                        self.currentRow[-1] += " "
-                    self.currentRow[-1] += text
+                    adapted_text = adapt_spaces(text, self.currentRow[-1])
+                    self.currentRow[-1] += adapted_text
             elif text.strip():
                 self.currentRowIsHeader = False
                 self.currentRow.append(text)

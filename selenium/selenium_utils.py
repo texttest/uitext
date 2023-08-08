@@ -79,13 +79,6 @@ def add_chromium_screen_options(options, delay):
     
 def create_chrome_driver():    
     global driver
-    try:
-        # If we have installed the autoinstaller, should use it!
-        import chromedriver_autoinstaller
-        chromedriver_autoinstaller.install()
-    except ModuleNotFoundError:
-        pass
-    
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
@@ -97,16 +90,15 @@ def create_chrome_driver():
         add_chromium_default_download(options, downloadsDir)
     add_chromium_screen_options(options, delay)
     
-    desired_capabilities = {}
-    desired_capabilities['goog:loggingPrefs'] = {'browser':'ALL'}
+    options.set_capability('goog:loggingPrefs', {'browser':'ALL'})
     try:
-        driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options)
+        driver = webdriver.Chrome(options=options)
     except WebDriverException as e:
         # on Ubuntu, snap chromedriver has a non-default name it seems
         if os.name == "posix" and "executable needs to be in PATH" in str(e):
             service = Service("chromium.chromedriver")
             try:
-                driver = webdriver.Chrome(desired_capabilities=desired_capabilities, options=options, service=service)
+                driver = webdriver.Chrome(options=options, service=service)
             except WebDriverException:
                 raise e
         else:

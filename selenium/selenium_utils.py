@@ -91,18 +91,7 @@ def create_chrome_driver():
     add_chromium_screen_options(options, delay)
     
     options.set_capability('goog:loggingPrefs', {'browser':'ALL'})
-    try:
-        driver = webdriver.Chrome(options=options)
-    except WebDriverException as e:
-        # on Ubuntu, snap chromedriver has a non-default name it seems
-        if os.name == "posix" and "executable needs to be in PATH" in str(e):
-            service = Service("chromium.chromedriver")
-            try:
-                driver = webdriver.Chrome(options=options, service=service)
-            except WebDriverException:
-                raise e
-        else:
-            raise
+    driver = webdriver.Chrome(options=options)
         
 def create_firefox_driver():
     global driver

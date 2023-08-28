@@ -91,7 +91,14 @@ def create_chrome_driver():
     add_chromium_screen_options(options, delay)
     
     options.set_capability('goog:loggingPrefs', {'browser':'ALL'})
-    driver = webdriver.Chrome(options=options)
+    try:
+        driver = webdriver.Chrome(options=options)
+    except (OSError, WebDriverException):
+        # This automatically downloads the relevant driver in a given place
+        # So if two tests do this simultaneously they might clash
+        # wait a bit and try again.
+        time.sleep(1)
+        driver = webdriver.Chrome(options=options)
         
 def create_firefox_driver():
     global driver

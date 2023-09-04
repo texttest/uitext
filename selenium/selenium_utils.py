@@ -115,8 +115,15 @@ def create_firefox_driver():
         options.headless = True
         options.add_argument("--width=" + width)
         options.add_argument("--height=" + height)
-    driver = webdriver.Firefox(options=options)
-    
+    try:
+        driver = webdriver.Firefox(options=options)
+    except (OSError, WebDriverException):
+        # This automatically downloads the relevant driver in a given place
+        # So if two tests do this simultaneously they might clash
+        # wait a bit and try again.
+        time.sleep(1)
+        driver = webdriver.Firefox(options=options)
+        
 def create_edge_driver():
     global driver
     options = webdriver.EdgeOptions()
@@ -126,7 +133,14 @@ def create_edge_driver():
     if downloadsDir:
         add_chromium_default_download(options, downloadsDir)
     add_chromium_screen_options(options, delay)
-    driver = webdriver.Edge(options=options)
+    try:
+        driver = webdriver.Edge(options=options)
+    except (OSError, WebDriverException):
+        # This automatically downloads the relevant driver in a given place
+        # So if two tests do this simultaneously they might clash
+        # wait a bit and try again.
+        time.sleep(1)
+        driver = webdriver.Edge(options=options)
 
 def get_from_session_storage(key):
     return driver.execute_script("return sessionStorage.getItem('" + key + "');")

@@ -133,6 +133,7 @@ def create_edge_driver():
     if downloadsDir:
         add_chromium_default_download(options, downloadsDir)
     add_chromium_screen_options(options, delay)
+    options.set_capability('ms:loggingPrefs', {'browser':'ALL'})
     try:
         driver = webdriver.Edge(options=options)
     except (OSError, WebDriverException):
@@ -431,7 +432,7 @@ browser_console_file = sys.stderr
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
 def fetch_logs(serious_only, serious_level='WARNING'):
-    if isinstance(driver, webdriver.Chrome):
+    if isinstance(driver, (webdriver.Chrome, webdriver.Edge)):
         # only chrome allows fetching browser logs
         serious_level_number = loglevels.get(serious_level)
         for log_type in driver.log_types:

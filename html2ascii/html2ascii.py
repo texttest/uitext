@@ -32,9 +32,15 @@ def shouldAddWhitespace(text, existingText):
     else:
         return not lastChar.isspace()
     
-def quotes_matched_in_line(origText):
+def quotes_matched_in_line(origText, quote_char):
     pos = origText.rfind("\n") + 1
-    return origText[pos:].count("'") % 2 == 0
+    return origText[pos:].count(quote_char) % 2 == 0
+
+quote_chars = "'*"
+def find_quote(newChar, lastChar):
+    for quote in quote_chars:
+        if newChar == quote or lastChar == quote:
+            return quote
 
 def adapt_spaces(text, origText):
     if len(origText) == 0 or len(text) == 0:
@@ -45,15 +51,16 @@ def adapt_spaces(text, origText):
     if newChar == " " and lastChar == " ":
         return text.lstrip(" ")
     
-    newCharContent = newChar.isalnum() or newChar in '(='
-    lastCharContent = lastChar.isalnum() or lastChar in '):'
+    newCharContent = newChar.isalnum() or newChar in '[(:='
+    lastCharContent = lastChar.isalnum() or lastChar in ')]:='
     if newCharContent == lastCharContent:
         return " " + text if newCharContent else text
 
-    if newChar != "'" and lastChar != "'":
+    quote_char = find_quote(newChar, lastChar)
+    if not quote_char:
         return text
 
-    return " " + text if quotes_matched_in_line(origText) else text
+    return " " + text if quotes_matched_in_line(origText, quote_char) else text
 
 
 class ModalAbort(Exception):
@@ -335,6 +342,8 @@ class HtmlExtractParser(HTMLParser):
         elif name == "div":
             if self.level == self.modalDivLevel:
                 self.modalDivLevel = None
+                if not self.text.endswith("\n"):
+                    self.text += "\n"
                 self.handle_data("_" * 50)
                 raise ModalAbort()
             if self.in_flex():
@@ -407,7 +416,7 @@ class HtmlExtractParser(HTMLParser):
             self.currentSubParsers[-1].addText(text)
         elif self.inBody and not self.inScript:
             if not text.isspace() or shouldAddWhitespace(text, self.text):
-                adapted_text = adapt_spaces(text, self.text)
+                adapted_text = adapt_spaces(text.strip(" "), self.text)
                 self.text += adapted_text
         elif self.inStyle:
             for dimension in [ "width", "height" ]:

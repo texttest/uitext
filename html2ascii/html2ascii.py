@@ -412,15 +412,15 @@ class HtmlExtractParser(HTMLParser):
                 self.handle_after_data_text()
 
     def addText(self, text):
-        if self.currentSubParsers:
+        if self.inStyle:
+            for dimension in [ "width", "height" ]:
+                self.checkStyleForSliders(text, dimension)
+        elif self.currentSubParsers:
             self.currentSubParsers[-1].addText(text)
         elif self.inBody and not self.inScript:
             if not text.isspace() or shouldAddWhitespace(text, self.text):
                 adapted_text = adapt_spaces(text.strip(" "), self.text)
                 self.text += adapted_text
-        elif self.inStyle:
-            for dimension in [ "width", "height" ]:
-                self.checkStyleForSliders(text, dimension)
             
     def checkStyleForSliders(self, text, dimension):
         parts = text.split(dimension + ":")

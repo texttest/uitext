@@ -81,6 +81,7 @@ def create_chrome_driver():
     global driver
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
+    options.allow_running_insecure_content = True
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
     if browser_lang:
         options.add_argument("--lang=" + browser_lang)

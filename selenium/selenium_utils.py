@@ -17,6 +17,7 @@ orig_url = None
 delay = float(os.getenv("USECASE_REPLAY_DELAY", "0"))
 
 test_id_key = "data-test-id"
+allow_insecure_content = False
 class By(SeleniumBy):
     TEST_ID = "test id"
 
@@ -81,7 +82,8 @@ def create_chrome_driver():
     global driver
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
-    options.add_argument("--allow-running-insecure-content")
+    if allow_insecure_content:
+        options.add_argument("--allow-running-insecure-content")
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
     if browser_lang:
         options.add_argument("--lang=" + browser_lang)
@@ -104,6 +106,9 @@ def create_chrome_driver():
 def create_firefox_driver():
     global driver
     options = webdriver.FirefoxOptions()
+    if allow_insecure_content:
+        options.set_preference("security.mixed_content.block_active_content", False)
+        options.set_preference("security.mixed_content.block_display_content", True)
     downloadsDir = get_downloads_dir()
     if downloadsDir:
         options.set_preference("browser.download.folderList", 2)
@@ -130,6 +135,9 @@ def create_edge_driver():
     options = webdriver.EdgeOptions()
     options.use_chromium = True
     options.accept_insecure_certs = True
+    if allow_insecure_content:
+        options.add_argument("--allow-running-insecure-content")
+    
     downloadsDir = get_downloads_dir()
     if downloadsDir:
         add_chromium_default_download(options, downloadsDir)

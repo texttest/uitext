@@ -166,17 +166,30 @@ class HtmlExtractParser(HTMLParser):
         else:
             return display == "block"
 
+    def parse_style(self, style):
+        info = {}
+        for part in style.strip().split(";"):
+            if part:
+                key, value = part.split(":")
+                info[key.strip()] = value.strip()
+        return info
+
     def get_display_style(self, attrs):
         test_display = get_attr_value(attrs, "data-test-explicit-display")
         if test_display:
             return test_display
         style = get_attr_value(attrs, "style")
         if style is not None:
-            displayKey = "display: "
-            pos = style.find(displayKey)
-            if pos != -1:
-                remains = style[pos + len(displayKey):]
-                return remains.split(";", 1)[0]
+            style_info = self.parse_style(style)
+            display = style_info.get("display")
+            if display:
+                return display
+            
+            # Sometimes things are deliberately placed offscreen instead of making them invisible. For our purposes it's the same
+            if style_info.get("position") == "absolute" and \
+                (style_info.get("left", "").startswith("-") or style_info.get("top", "").startswith("-")):
+                return "none"
+
         return "unknown"
 
     def handle_starttag(self, rawname, attrs):

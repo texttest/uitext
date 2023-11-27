@@ -216,6 +216,9 @@ def make_selector(by, value):
 def find_element(by, value):
     return driver.find_element(*make_selector(by, value))
 
+def find_elements(by, value):
+    return driver.find_elements(*make_selector(by, value))
+
 def enter_text(by, value, text, replace=False, enter=False):
     textfield = find_element(by, value)
     change_text_in_field(textfield, text, replace=replace, enter=enter)
@@ -384,6 +387,13 @@ def wait_and_hover_on_element(*selectorArgs):
     element = wait_for_visible(*make_selector(*selectorArgs))
     action.move_to_element(element).perform()
     return element
+
+def wait_and_move_and_click_on_element(*selectorArgs):
+    action = ActionChains(driver)
+    element = wait_for_visible(*make_selector(*selectorArgs))
+    action.click(element).perform()
+    return element
+
 
 def tick(factor=1):
     if delay:

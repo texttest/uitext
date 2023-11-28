@@ -227,16 +227,17 @@ def clear_text_field(textfield):
     textfield.send_keys(Keys.CONTROL, "a")
     textfield.send_keys(Keys.DELETE)
     # Seems to fail sometimes on Edge/Linux. Fix it up.
-    for i in range(5):
-        if len(textfield.text) > 0:
-            textfield.send_keys(Keys.CONTROL, "a")
-            textfield.send_keys(Keys.DELETE)
-            if i == 4:
-                raise WebDriverException("Failed to clear text field after 5 attempts!")
+    if driver.capabilities['browserName'] == "msedge":
+        for i in range(5):
+            if len(textfield.get_attribute("value")) > 0:
+                textfield.send_keys(Keys.CONTROL, "a")
+                textfield.send_keys(Keys.DELETE)
+                if i == 4:
+                    raise WebDriverException("Failed to clear text field after 5 attempts!")
+                else:
+                    time.sleep(0.5)
             else:
-                time.sleep(0.5)
-        else:
-            return
+                return
     
 def change_text_in_field(textfield, text, replace=False, tab=False, enter=False):
     if delay:

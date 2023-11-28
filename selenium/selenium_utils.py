@@ -222,13 +222,27 @@ def find_elements(by, value):
 def enter_text(by, value, text, replace=False, enter=False):
     textfield = find_element(by, value)
     change_text_in_field(textfield, text, replace=replace, enter=enter)
+
+def clear_text_field(textfield):
+    textfield.send_keys(Keys.CONTROL, "a")
+    textfield.send_keys(Keys.DELETE)
+    # Seems to fail sometimes on Edge/Linux. Fix it up.
+    for i in range(5):
+        if len(textfield.text) > 0:
+            textfield.send_keys(Keys.CONTROL, "a")
+            textfield.send_keys(Keys.DELETE)
+            if i == 4:
+                raise WebDriverException("Failed to clear text field after 5 attempts!")
+            else:
+                time.sleep(0.5)
+        else:
+            return
     
 def change_text_in_field(textfield, text, replace=False, tab=False, enter=False):
     if delay:
         time.sleep(delay)
     if replace:
-        textfield.send_keys(Keys.CONTROL, "a")
-        textfield.send_keys(Keys.DELETE)
+        clear_text_field(textfield)
     if text:
         textfield.send_keys(text)
     if tab:

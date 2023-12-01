@@ -270,7 +270,7 @@ class HtmlExtractParser(HTMLParser):
                 self.inSuperscript = True
                 self.addText("^")
             elif self.currentSubParsers:
-                self.currentSubParsers[-1].startElement(name, attrs)
+                self.currentSubParsers[-1].startElement(name, attrs, self.in_flex())
             elif name == "body":
                 self.inBody = True
             elif name == "script":
@@ -476,7 +476,7 @@ class SelectParser:
         self.options = []
         self.inOption = False
 
-    def startElement(self, name, attrs):
+    def startElement(self, name, *args):
         if name == "option":
             self.options.append("")
             self.inOption = True
@@ -507,7 +507,7 @@ class TableParser:
     def isRow(self, name):
         return name in ["tr"]
 
-    def startElement(self, name, attrs):
+    def startElement(self, name, attrs, flex):
         self.activeElements[name] = attrs
         if self.isRow(name):
             self.currentRow = []
@@ -520,7 +520,7 @@ class TableParser:
                 if name == "td" and "thead" not in self.activeElements:
                     self.currentRowIsHeader = False
         elif name == "div" and self.currentRow is not None and len(self.currentRow) and \
-            self.currentRow[-1].strip() and not self.currentRow[-1].endswith("\n"):
+            self.currentRow[-1].strip() and not self.currentRow[-1].endswith("\n") and not flex:
             self.currentRow[-1] += "\n"
 
     def endElement(self, name):

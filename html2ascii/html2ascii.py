@@ -245,9 +245,12 @@ class HtmlExtractParser(HTMLParser):
                 self.addText("\n")
             elif name == "input":
                 input_type = get_attr_value(attrs, "type")
-                if input_type == "button":
+                if input_type in [ "button", "submit" ]:
                     value = get_attr_value(attrs, "value")
-                    self.handle_data("Button '" + value + "'")
+                    data = "Button '" + value + "'"
+                    if input_type == "submit":
+                        data += " (submit)"
+                    self.handle_data(data)                        
                 elif input_type == "radio":
                     self.handle_data("( ) ")
                 elif input_type == "checkbox":

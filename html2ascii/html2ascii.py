@@ -243,6 +243,9 @@ class HtmlExtractParser(HTMLParser):
                 self.liLevel += 1
             elif name == "br":
                 self.addText("\n")
+            elif name == "p":
+                if not self.text.endswith("\n\n"):
+                    self.addText("\n\n")
             elif name == "input":
                 input_type = get_attr_value(attrs, "type")
                 if input_type in [ "button", "submit" ]:
@@ -355,6 +358,9 @@ class HtmlExtractParser(HTMLParser):
             self.addText("\n")
         elif self.currentSubParsers and name != "img":
             self.currentSubParsers[-1].endElement(name)
+        elif name == "p":
+            if not self.text.endswith("\n\n"):
+                self.addText("\n\n")
         elif name == "div":
             if self.level == self.modalDivLevel:
                 self.modalDivLevel = None

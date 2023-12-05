@@ -51,8 +51,8 @@ def adapt_spaces(text, origText):
     if newChar == " " and lastChar == " ":
         return text.lstrip(" ")
     
-    newCharContent = newChar.isalnum() or newChar in '[(:='
-    lastCharContent = lastChar.isalnum() or lastChar in ')]:='
+    newCharContent = newChar.isalnum() or newChar in '[(:=-'
+    lastCharContent = lastChar.isalnum() or lastChar in ')]:=-'
     if newCharContent == lastCharContent:
         return " " + text if newCharContent else text
 
@@ -235,11 +235,13 @@ class HtmlExtractParser(HTMLParser):
             elif name == "nav":
                 self.addText("\n(Navigation:\n")
             elif name == "li":
-                indent = ""
-                if self.liLevel > 1:
-                    self.addText("\n")
-                    indent = "  " * self.liLevel
-                self.addText(indent + "- ")
+                text = ""
+                if self.liLevel > 0:
+                    if not self.text.endswith("\n"):
+                        text += "\n"
+                    text += "  " * self.liLevel
+                text += "- "
+                self.beforeDataText = text
                 self.liLevel += 1
             elif name == "br":
                 self.addText("\n")
@@ -355,7 +357,8 @@ class HtmlExtractParser(HTMLParser):
             self.addText("*")
         elif name == "li":
             self.liLevel -= 1
-            self.addText("\n")
+            if self.liLevel == 0 and not self.text.endswith("\n"):
+                self.text += "\n"
         elif self.currentSubParsers and name != "img":
             self.currentSubParsers[-1].endElement(name)
         elif name == "p":

@@ -3,7 +3,8 @@ from selenium import webdriver # @UnresolvedImport
 from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImport
 from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
 from selenium.webdriver.common.keys import Keys # @UnresolvedImport
-from selenium.common.exceptions import WebDriverException, StaleElementReferenceException # @UnresolvedImport
+from selenium.common.exceptions import WebDriverException, StaleElementReferenceException,\
+    NoSuchElementException # @UnresolvedImport
 from selenium.webdriver.common.by import By as SeleniumBy # @UnresolvedImport
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
@@ -330,6 +331,17 @@ def find_shadow_content(shadow_root):
             if parent.id == element.id:
                 content.append(element)
     return content
+
+def find_text_in_dropdown(by, value, text):
+    for _ in range(20):
+        activeElement = driver.switch_to.active_element
+        try:
+            elem = find_element(by, value)
+            if elem.text == text:
+                return activeElement.send_keys(Keys.ENTER)
+        except NoSuchElementException:
+            pass # might not be anything selected initially
+        activeElement.send_keys(Keys.DOWN)
 
 
 def search_in_dropdown(by, value, text):

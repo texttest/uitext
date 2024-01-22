@@ -192,6 +192,9 @@ class HtmlExtractParser(HTMLParser):
 
         return "unknown"
 
+    def is_navigation_tag(self, name):
+        return name in ("nav", "app-nav-menu")
+
     def handle_starttag(self, rawname, attrs):
         self.afterDataText = self.afterDataText.rstrip()
         name = rawname.lower()
@@ -232,7 +235,7 @@ class HtmlExtractParser(HTMLParser):
 
             if name == "button":
                 self.handle_data("Button '")
-            elif name == "nav":
+            elif self.is_navigation_tag(name):
                 self.addText("\n(Navigation:\n")
             elif name == "li":
                 text = ""
@@ -377,7 +380,7 @@ class HtmlExtractParser(HTMLParser):
             else:
                 if not self.text.endswith("\n"):
                     self.addText("\n")
-        elif name == "nav":
+        elif self.is_navigation_tag(name):
             self.addText(")")
         elif name == "textarea":
             self.addText("\n" + "=" * 10)

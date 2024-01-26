@@ -333,15 +333,21 @@ def find_shadow_content(shadow_root):
     return content
 
 def find_text_in_dropdown(by, value, text):
+    arrowKey = Keys.DOWN
     for _ in range(20):
         activeElement = driver.switch_to.active_element
         try:
             elem = find_element(by, value)
-            if elem.text == text:
-                return activeElement.send_keys(Keys.ENTER)
         except NoSuchElementException:
-            pass # might not be anything selected initially
-        activeElement.send_keys(Keys.DOWN)
+            # might not be anything selected initially, press down and wait
+            activeElement.send_keys(arrowKey)
+            elem = wait_for_element(by, value)
+            
+        if elem.text == text:
+            return activeElement.send_keys(Keys.ENTER)
+        else:
+            activeElement.send_keys(arrowKey)
+    raise WebDriverException("Failed to find the text '" + text + "' in the dropdown!")
 
 
 def search_in_dropdown(by, value, text):

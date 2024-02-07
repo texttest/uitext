@@ -113,7 +113,7 @@ class HtmlExtractParser(HTMLParser):
         return elementProperties
 
     def is_kendo_icon(self, prop):
-        return prop.startswith("k-i-") or prop.startswith("icon-")
+        return prop.startswith("k-i-") or prop.startswith("k-svg-i-") or prop.startswith("icon-")
 
     def is_font_awesome_icon(self, prop):
         return prop.startswith("fa-") and prop != "fa-icon" and not prop.startswith("fa-w-")

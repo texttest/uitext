@@ -169,8 +169,8 @@ class HtmlExtractParser(HTMLParser):
     def parse_style(self, style):
         info = {}
         for part in style.strip().split(";"):
-            if part:
-                key, value = part.split(":")
+            if part and ":" in part:
+                key, value = part.split(":", 1)
                 info[key.strip()] = value.strip()
         return info
 

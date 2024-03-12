@@ -403,14 +403,20 @@ def wait_for_case_insensitive_text(text, *selectorArgs, **kw):
     return wait_until(case_insensitive_text_to_be_present_in_element(make_selector(*selectorArgs), text), **kw)
 
 def wait_and_click(*selectorArgs, **kw):
-    for _ in range(5):
+    attempts = 5
+    for attempt in range(attempts):
         try:
             element = wait_until(EC.element_to_be_clickable(make_selector(*selectorArgs)), error=repr(selectorArgs[-1]) + " not clickable", **kw)
             time.sleep(0.5)
             element.click()
             return element
+        except StaleElementReferenceException:
+            if attempt < attempts - 1:
+                time.sleep(0.1)
+            else:
+                raise
         except WebDriverException as e:
-            if 'is not clickable at point' in str(e):
+            if attempt < attempts - 1 and 'is not clickable at point' in str(e):
                 time.sleep(0.1)
             else:
                 raise

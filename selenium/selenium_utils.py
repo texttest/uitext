@@ -143,6 +143,7 @@ def create_edge_driver():
     if downloadsDir:
         add_chromium_default_download(options, downloadsDir)
     add_chromium_screen_options(options, delay)
+    options.add_argument('--disable-gpu')
     options.set_capability('ms:loggingPrefs', {'browser':'ALL'})
     try:
         driver = webdriver.Edge(options=options)

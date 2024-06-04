@@ -195,6 +195,20 @@ class HtmlExtractParser(HTMLParser):
     def is_navigation_tag(self, name):
         return name in ("nav", "app-nav-menu")
 
+
+    def enter_dialog(self, modal=True):
+        self.reset_for_dialog()
+        title = " Modal dialog " if modal else " Dialog "
+        self.addText("\n" + title.center(50, "_") + "\n")
+
+
+    def has_modal_property(self, elementProperties):
+        return elementProperties and any((className in elementProperties for className in self.modalProperties))
+
+    def ignore_until_tag(self, name):
+        self.ignoreUntilCloseTag = name
+        self.ignoreRecursionLevel = 1
+
     def handle_starttag(self, rawname, attrs):
         self.afterDataText = self.afterDataText.rstrip()
         name = rawname.lower()
@@ -208,8 +222,7 @@ class HtmlExtractParser(HTMLParser):
         elif not self.propertiesToIgnore.isdisjoint(elementProperties) or self.is_invisible(attrs, display, elementProperties) or name == "noscript": # If Javascript is disabled then we won't be able to test it anyway...
             # if the name is a void tag like "input", close tag will never come. Ignore this but don't set anything else.
             if name not in self.voidTags:
-                self.ignoreUntilCloseTag = name
-                self.ignoreRecursionLevel = 1
+                self.ignore_until_tag(name)
         elif name == "table":
             if len(self.currentSubParsers) > 0:
                 self.currentSubParsers[-1].addText("\n")  
@@ -297,12 +310,17 @@ class HtmlExtractParser(HTMLParser):
             elif name == "div":
                 if not self.in_flex() and not self.text.endswith("\n"):
                     self.beforeDataText = "\n"
-                if elementProperties and any((className in elementProperties for className in self.modalProperties)):
+                if self.has_modal_property(elementProperties):
                     self.modalDivLevel = self.level
-                    self.reset_for_dialog()
-                    self.addText("\n" + " Modal dialog ".center(50, "_") + "\n")
+                    self.enter_dialog(modal=True)
             elif name == "style":
                 self.inStyle = True
+            elif name == "dialog":
+                if "open" in dict(attrs):
+                    modal = self.has_modal_property(elementProperties)
+                    self.enter_dialog(modal)
+                else:
+                    self.ignore_until_tag("dialog")
             elif self.text.strip() and name in [ "h1", "h2", "h3", "h4" ]:
                 while not self.text.endswith("\n\n"):
                     self.text += "\n"
@@ -328,6 +346,12 @@ class HtmlExtractParser(HTMLParser):
         textSinceFlexStart = self.text[flexStartPos:]
         return "\n" not in textSinceFlexStart.strip()
     
+    def end_dialog(self):
+        if not self.text.endswith("\n"):
+            self.text += "\n"
+        self.handle_data("_" * 50)
+        raise ModalAbort()
+
     def handle_endtag(self, rawname):
         name = rawname.lower()
         self.beforeDataText = ""
@@ -370,16 +394,15 @@ class HtmlExtractParser(HTMLParser):
         elif name == "div":
             if self.level == self.modalDivLevel:
                 self.modalDivLevel = None
-                if not self.text.endswith("\n"):
-                    self.text += "\n"
-                self.handle_data("_" * 50)
-                raise ModalAbort()
+                self.end_dialog()
             if self.in_flex():
                 self.text = self.text.rstrip("\n")
                 self.set_flex_div_flag()
             else:
                 if not self.text.endswith("\n"):
                     self.addText("\n")
+        elif name == "dialog":
+            self.end_dialog()
         elif self.is_navigation_tag(name):
             self.addText(")")
         elif name == "textarea":

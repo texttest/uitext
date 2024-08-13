@@ -28,14 +28,15 @@ wait_timeout = 30
 def run_with_usecase(url, **kw):
     setup(url, **kw)
     run_usecase()
-    
-def run_usecase():
+
+
+def run_usecase(browser_console_error_file=None):
     if os.path.isfile("usecase.py"):
         try:
             exec(compile(open("usecase.py").read(), "usecase.py", 'exec'))
         except Exception:
             capture_all_text("termination")
-            close()
+            close(browser_console_error_file)
             raise
 
 def get_downloads_dir():
@@ -83,6 +84,7 @@ def create_chrome_driver():
     global driver
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
+    options.add_argument("--disable-search-engine-choice-screen")
     if allow_insecure_content:
         options.add_argument("--allow-running-insecure-content")
     browser_lang = os.getenv("USECASE_UI_LANGUAGE")
@@ -489,7 +491,8 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
 browser_console_file = sys.stderr
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
-def fetch_logs(serious_only, serious_level='WARNING'):
+
+def fetch_logs(serious_only, serious_level='WARNING', browser_console_error_file=None):
     if isinstance(driver, (webdriver.Chrome, webdriver.Edge)):
         # only chrome allows fetching browser logs
         serious_level_number = loglevels.get(serious_level)
@@ -506,21 +509,25 @@ def fetch_logs(serious_only, serious_level='WARNING'):
                         message += " (" + file + ":" + parts[1] + ")"
                     message = level + ": " + message
                     if serious:
-                        print(message, file=sys.stderr)
+                        if browser_console_error_file is not None:
+                            with open(browser_console_error_file, 'a') as file:
+                                print(message, file=file)
+                        else:
+                            print(message, file=sys.stderr)
                     elif not serious_only:
                         timestampSeconds = entry["timestamp"] / 1000
                         timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
                         print(timestamp, message, file=browser_console_file)
                 except Exception:
                     print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
-    
 
-def close():
+
+def close(browser_console_error_file=None):
     global driver
     if driver != None:
         if delay:
             time.sleep(delay)
-        fetch_logs(serious_only=False)
+        fetch_logs(serious_only=False, browser_console_error_file=browser_console_error_file)
         driver.quit()
         driver = None
     else:

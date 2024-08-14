@@ -30,13 +30,13 @@ def run_with_usecase(url, **kw):
     run_usecase()
 
 
-def run_usecase(browser_console_error_file=None):
+def run_usecase():
     if os.path.isfile("usecase.py"):
         try:
             exec(compile(open("usecase.py").read(), "usecase.py", 'exec'))
         except Exception:
             capture_all_text("termination")
-            close(browser_console_error_file)
+            close()
             raise
 
 def get_downloads_dir():
@@ -489,10 +489,12 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
         f.write(to_write)
     
 browser_console_file = sys.stderr
+browser_console_error_file = sys.stderr
+
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
 
-def fetch_logs(serious_only, serious_level='WARNING', browser_console_error_file=None):
+def fetch_logs(serious_only, serious_level='WARNING'):
     if isinstance(driver, (webdriver.Chrome, webdriver.Edge)):
         # only chrome allows fetching browser logs
         serious_level_number = loglevels.get(serious_level)
@@ -509,11 +511,7 @@ def fetch_logs(serious_only, serious_level='WARNING', browser_console_error_file
                         message += " (" + file + ":" + parts[1] + ")"
                     message = level + ": " + message
                     if serious:
-                        if browser_console_error_file is not None:
-                            with open(browser_console_error_file, 'a') as file:
-                                print(message, file=file)
-                        else:
-                            print(message, file=sys.stderr)
+                        print(message, file=browser_console_error_file)
                     elif not serious_only:
                         timestampSeconds = entry["timestamp"] / 1000
                         timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
@@ -522,12 +520,12 @@ def fetch_logs(serious_only, serious_level='WARNING', browser_console_error_file
                     print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
 
 
-def close(browser_console_error_file=None):
+def close():
     global driver
     if driver != None:
         if delay:
             time.sleep(delay)
-        fetch_logs(serious_only=False, browser_console_error_file=browser_console_error_file)
+        fetch_logs(serious_only=False)
         driver.quit()
         driver = None
     else:

@@ -489,8 +489,7 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
         f.write(to_write)
     
 browser_console_file = sys.stderr
-browser_console_error_file = open("browser_errors.tone", 'a')
-browser_error_to_different_file = False
+browser_console_error_file = sys.stderr
 
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
@@ -512,11 +511,7 @@ def fetch_logs(serious_only, serious_level='WARNING'):
                         message += " (" + file + ":" + parts[1] + ")"
                     message = level + ": " + message
                     if serious:
-                        if browser_error_to_different_file is True:
-                            print(message, file=browser_console_error_file)
-                        else:
-                            print(message, file=sys.stderr)
-                            print(browser_error_to_different_file, file=sys.stderr)
+                        print(message, file=browser_console_error_file)
                     elif not serious_only:
                         timestampSeconds = entry["timestamp"] / 1000
                         timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()

@@ -490,11 +490,12 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
     
 browser_console_file = sys.stderr
 browser_console_error_file = sys.stderr
+global_error_level = 'WARNING'
 
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
 
-def fetch_logs(serious_only, serious_level='WARNING'):
+def fetch_logs(serious_only, serious_level=global_error_level):
     if isinstance(driver, (webdriver.Chrome, webdriver.Edge)):
         # only chrome allows fetching browser logs
         serious_level_number = loglevels.get(serious_level)
@@ -518,6 +519,12 @@ def fetch_logs(serious_only, serious_level='WARNING'):
                         print(timestamp, message, file=browser_console_file)
                 except Exception:
                     print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
+        # Check if browser_console_error_file is not set to sys.stderr and delete if empty to prevent unnecessary empty browser error files.
+        if browser_console_error_file != sys.stderr:
+            file_path = browser_console_error_file.name
+            if os.path.exists(file_path) and os.path.getsize(file_path) == 0:
+                browser_console_error_file.close()
+                os.remove(file_path)
 
 
 def close():

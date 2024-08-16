@@ -520,12 +520,12 @@ def fetch_logs(serious_only, serious_level=global_error_level):
                 except Exception:
                     print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
 
-        # Check if browser_console_error_file is not set to sys.stderr and delete if empty to prevent unnecessary empty browser error files.
-        if browser_console_error_file != sys.stderr:
-            file_path = browser_console_error_file.name
-            browser_console_error_file.close()
-            if os.path.exists(file_path) and os.path.getsize(file_path) == 0:
-                os.remove(file_path)
+    # Check if browser_console_error_file is not set to sys.stderr and delete if empty to prevent unnecessary empty browser error files.
+    if browser_console_error_file != sys.stderr:
+        file_path = browser_console_error_file.name
+        browser_console_error_file.close()
+        if os.path.exists(file_path) and os.path.getsize(file_path) == 0:
+            os.remove(file_path)
 
 
 def close():

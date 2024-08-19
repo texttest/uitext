@@ -517,8 +517,8 @@ def fetch_logs(serious_only, serious_level=global_error_level):
                         timestampSeconds = entry["timestamp"] / 1000
                         timestamp = datetime.fromtimestamp(timestampSeconds).isoformat()
                         print(timestamp, message, file=browser_console_file)
-                except Exception:
-                    print("FAILED to parse " + entry['message'] + '!', file=sys.stderr)
+                except Exception as e:
+                    print("FAILED to parse browser console message -", str(e), "\nMessage was '" + entry['message'] + "'", file=sys.stderr)
 
     # Check if browser_console_error_file is not set to sys.stderr and delete if empty to prevent unnecessary empty browser error files.
     if browser_console_error_file != sys.stderr:

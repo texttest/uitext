@@ -521,7 +521,7 @@ def fetch_logs(serious_only, serious_level=global_error_level):
                     print("FAILED to parse browser console message -", str(e), "\nMessage was '" + entry['message'] + "'", file=sys.stderr)
 
     # Check if browser_console_error_file is not set to sys.stderr and delete if empty to prevent unnecessary empty browser error files.
-    if browser_console_error_file != sys.stderr:
+    if not serious_only and browser_console_error_file != sys.stderr:
         file_path = browser_console_error_file.name
         browser_console_error_file.close()
         if os.path.exists(file_path) and os.path.getsize(file_path) == 0:

@@ -495,7 +495,7 @@ global_error_level = 'WARNING'
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
 
-def fetch_logs(serious_only, serious_level=global_error_level):
+def fetch_logs(serious_only, serious_level):
     if isinstance(driver, (webdriver.Chrome, webdriver.Edge)):
         # only chrome allows fetching browser logs
         serious_level_number = loglevels.get(serious_level)
@@ -533,7 +533,7 @@ def close():
     if driver != None:
         if delay:
             time.sleep(delay)
-        fetch_logs(serious_only=False)
+        fetch_logs(serious_only=False, serious_level=global_error_level)
         driver.quit()
         driver = None
     else:

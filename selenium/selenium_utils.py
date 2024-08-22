@@ -79,9 +79,23 @@ def add_chromium_screen_options(options, delay):
         options.add_argument("--window-size=" + screen_size)
         options.add_argument('--headless=new')
 
-    
-def create_chrome_driver():    
+def create_driver_object_and_retry(clsName, options):
     global driver
+    attempts = 5
+    for attempt in range(attempts):
+        try:
+            driver = clsName(options=options)
+            return
+        except (OSError, WebDriverException):
+            # This automatically downloads the relevant driver in a given place
+            # So if two tests do this simultaneously they might clash
+            # wait a bit and try again.
+            if attempt == attempts - 1:
+                raise
+            else:
+                time.sleep(1)
+        
+def create_chrome_driver():    
     options = webdriver.ChromeOptions()
     options.accept_insecure_certs = True
     options.add_argument("--disable-search-engine-choice-screen")
@@ -97,17 +111,9 @@ def create_chrome_driver():
     add_chromium_screen_options(options, delay)
     
     options.set_capability('goog:loggingPrefs', {'browser':'ALL'})
-    try:
-        driver = webdriver.Chrome(options=options)
-    except (OSError, WebDriverException):
-        # This automatically downloads the relevant driver in a given place
-        # So if two tests do this simultaneously they might clash
-        # wait a bit and try again.
-        time.sleep(1)
-        driver = webdriver.Chrome(options=options)
+    create_driver_object_and_retry(webdriver.Chrome, options)
         
 def create_firefox_driver():
-    global driver
     options = webdriver.FirefoxOptions()
     if allow_insecure_content:
         options.set_preference("security.mixed_content.block_active_content", False)
@@ -124,17 +130,9 @@ def create_firefox_driver():
         options.headless = True
         options.add_argument("--width=" + width)
         options.add_argument("--height=" + height)
-    try:
-        driver = webdriver.Firefox(options=options)
-    except (OSError, WebDriverException):
-        # This automatically downloads the relevant driver in a given place
-        # So if two tests do this simultaneously they might clash
-        # wait a bit and try again.
-        time.sleep(1)
-        driver = webdriver.Firefox(options=options)
+    create_driver_object_and_retry(webdriver.Firefox, options)
         
 def create_edge_driver():
-    global driver
     options = webdriver.EdgeOptions()
     options.use_chromium = True
     options.accept_insecure_certs = True
@@ -146,14 +144,7 @@ def create_edge_driver():
         add_chromium_default_download(options, downloadsDir)
     add_chromium_screen_options(options, delay)
     options.set_capability('ms:loggingPrefs', {'browser':'ALL'})
-    try:
-        driver = webdriver.Edge(options=options)
-    except (OSError, WebDriverException):
-        # This automatically downloads the relevant driver in a given place
-        # So if two tests do this simultaneously they might clash
-        # wait a bit and try again.
-        time.sleep(1)
-        driver = webdriver.Edge(options=options)
+    create_driver_object_and_retry(webdriver.Edge, options)
 
 def get_from_session_storage(key):
     return driver.execute_script("return sessionStorage.getItem('" + key + "');")

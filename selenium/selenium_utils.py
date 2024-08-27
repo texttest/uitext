@@ -486,7 +486,7 @@ global_error_level = 'WARNING'
 loglevels = { 'NOTSET':0 , 'DEBUG':10 ,'INFO': 20 , 'WARNING':30, 'ERROR':40, 'SEVERE':40, 'CRITICAL':50}
 
 
-def fetch_logs(serious_only, serious_level):
+def fetch_logs(serious_only, serious_level, clean_empty_browser_errors=True):
     if isinstance(driver, (webdriver.Chrome, webdriver.Edge)):
         # only chrome allows fetching browser logs
         serious_level_number = loglevels.get(serious_level)
@@ -512,19 +512,19 @@ def fetch_logs(serious_only, serious_level):
                     print("FAILED to parse browser console message -", str(e), "\nMessage was '" + entry['message'] + "'", file=sys.stderr)
 
     # Check if browser_console_error_file is not set to sys.stderr and delete if empty to prevent unnecessary empty browser error files.
-    if not serious_only and browser_console_error_file != sys.stderr:
+    if clean_empty_browser_errors and not serious_only and browser_console_error_file != sys.stderr:
         file_path = browser_console_error_file.name
         browser_console_error_file.close()
         if os.path.exists(file_path) and os.path.getsize(file_path) == 0:
             os.remove(file_path)
 
 
-def close():
+def close(**kw):
     global driver
     if driver != None:
         if delay:
             time.sleep(delay)
-        fetch_logs(serious_only=False, serious_level=global_error_level)
+        fetch_logs(serious_only=False, serious_level=global_error_level, **kw)
         driver.quit()
         driver = None
     else:

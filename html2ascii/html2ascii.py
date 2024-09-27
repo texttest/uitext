@@ -626,6 +626,7 @@ if __name__ == '__main__':
     iconProperties = parseList(args.icons)
     modalProperties = parseList(args.modals)
     multiple = len(args.filenames) > 1
+    sys.stdout.reconfigure(encoding='utf-8')
     for i, filename in enumerate(args.filenames):
         if multiple and i > 0:
             print()
@@ -635,6 +636,6 @@ if __name__ == '__main__':
                 stage = stage[4:]
             stage = " " + stage + " "
             print(stage.center(30, "-"))
-        text = open(filename).read()
+        text = open(filename, encoding="utf-8").read()
         parser = HtmlExtractParser(toIgnore, iconProperties, modalProperties, args.show_invisible)
         print(parser.parse(text))

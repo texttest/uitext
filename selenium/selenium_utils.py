@@ -467,7 +467,7 @@ def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
     while os.path.isfile(fn):
         fn = get_next_fn(fn)
     driver.save_screenshot(fn.replace(".html", ".png"))
-    with open(fn, mode="w") as f:
+    with open(fn, mode="w", encoding="utf-8") as f:
         if add_explicit_display_tags and not shadow_dom_info:
             add_all_display_tags()
         to_write = element.get_attribute("outerHTML") if element else driver.page_source

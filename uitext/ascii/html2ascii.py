@@ -4,7 +4,7 @@
 
 import sys, os
 from html.parser import HTMLParser
-from gridformatter import GridFormatter, GridFormatterWithHeader
+from .gridformatter import GridFormatter, GridFormatterWithHeader
 from traceback import format_exception
 import argparse
 
@@ -614,7 +614,7 @@ class TableParser:
 def parseList(text):
     return set(text.split(",")) if text else set()
 
-if __name__ == '__main__':
+def main_cli():
     parser = argparse.ArgumentParser(description='Program to write HTML as ASCII art, suitable for e.g. TextTest testing')
     parser.add_argument('--ignore', default="", help='Comma-separated list of CSS classes to ignore')
     parser.add_argument('--icons', default="", help='Comma-separated list of CSS classes to treat as icons')
@@ -639,3 +639,6 @@ if __name__ == '__main__':
         text = open(filename, encoding="utf-8").read()
         parser = HtmlExtractParser(toIgnore, iconProperties, modalProperties, args.show_invisible)
         print(parser.parse(text))
+
+if __name__ == '__main__':
+    main_cli()

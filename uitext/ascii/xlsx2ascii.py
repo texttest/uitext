@@ -2,8 +2,7 @@
 
 import sys, warnings
 import openpyxl
-from gridformatter import GridFormatter, GridFormatterWithHeader
-from pprint import pprint
+from .gridformatter import GridFormatter, GridFormatterWithHeader
 
 def print_data(obj):
     for attr in dir(obj):
@@ -117,8 +116,11 @@ class WorkbookWriter:
         for style_id, cell in self.style_cells.items():
             print("*" * style_id, self.get_style_description(cell))
             print()
-                
-if __name__ == '__main__':
+   
+def main_cli():
     last_file = max(sorted(sys.argv[1:]))
     writer = WorkbookWriter(last_file)
     writer.write()
+                
+if __name__ == '__main__':
+    main_cli()

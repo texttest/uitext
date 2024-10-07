@@ -1,0 +1,28 @@
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uitext"
+version = "1.0.0"
+authors = [
+    { name="Geoff Bache", email="geoff.bache@pobox.com" },
+]
+description = "UI-related utilities for approval testing for Selenium and Sikuli"
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/texttest/uitext"
+"Bug Tracker" = "https://github.com/texttest/uitext/issues"
+
+[project.scripts]
+html2ascii = "uitext.ascii.html2ascii:main_cli"
+xlsx2ascii = "uitext.ascii.xlsx2ascii:main_cli"

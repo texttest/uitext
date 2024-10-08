@@ -456,10 +456,11 @@ def wait_for_download():
                 time.sleep(0.1)
     raise WebDriverException("No download files available after waiting " + str(wait_timeout) + " seconds")
 
-def capture_all_text(pagename="websource", element=None, shadow_dom_info=None):
+def capture_all_text(pagename="websource", element=None, shadow_dom_info=None, checkpoint=True):
     if delay:
         time.sleep(delay)
-    wait_for_checkpoint(pagename)
+    if checkpoint:
+        wait_for_checkpoint(pagename)
     fn = pagename + ".html"
     if capture_numbered:
         global page_number

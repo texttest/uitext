@@ -446,10 +446,12 @@ def wait_and_move_and_context_click_on_element(*selectorArgs):
 def send_keyboard(modifier=None, key=None):
     action = ActionChains(driver)
     if modifier != None:
-        actionChain = action.key_down(getattr(Keys, modifier))
-        if key != None:
+        if key == None:
+            actionChain = action.send_keys(getattr(Keys, modifier))
+        else:
+            actionChain = action.key_down(getattr(Keys, modifier))
             actionChain = actionChain.send_keys(key)
-        actionChain = action.key_up(getattr(Keys, modifier))
+            actionChain = actionChain.key_up(getattr(Keys, modifier))
     else:
         actionChain = action.send_keys(key)
     actionChain.perform()

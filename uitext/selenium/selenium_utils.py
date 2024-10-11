@@ -421,12 +421,40 @@ def wait_and_hover_on_element(*selectorArgs):
     action.move_to_element(element).perform()
     return element
 
-def wait_and_move_and_click_on_element(*selectorArgs):
+def wait_and_move_and_click_on_element(*selectorArgs, keys=None):
     action = ActionChains(driver)
     element = wait_for_visible(*make_selector(*selectorArgs))
-    action.click(element).perform()
+    for key in keys:
+        if actionChain == None:
+            actionChain = action.key_down(Keys[key], element)
+        else:
+            actionChain = actionChain.key_down(Keys[key], element)
+    if actionChain == None:
+        actionChain = action.click(element)
+    else:
+        actionChain = actionChain.click(element)
+    for key in keys:
+        actionChain = action.key_down(Keys[key], element)
+    actionChain.perform()
     return element
 
+def wait_and_move_and_context_click_on_element(*selectorArgs):
+    action = ActionChains(driver)
+    element = wait_for_visible(*make_selector(*selectorArgs))
+    action.context_click(element).perform()
+    return element
+
+def wait_and_send_keyboard(*selectorArgs, keys=None):
+    action = ActionChains(driver)
+    element = wait_for_visible(*make_selector(*selectorArgs))
+    for key in keys:
+        if actionChain == None:
+            actionChain = action.key_down(Keys[key], element)
+        else:
+            actionChain = actionChain.key_down(Keys[key], element)
+    for key in keys:
+        actionChain = action.key_down(Keys[key], element)
+    actionChain.perform()
 
 def tick(factor=1):
     if delay:

@@ -421,20 +421,19 @@ def wait_and_hover_on_element(*selectorArgs):
     action.move_to_element(element).perform()
     return element
 
-def wait_and_move_and_click_on_element(*selectorArgs, keys=None):
+def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
     action = ActionChains(driver)
     element = wait_for_visible(*make_selector(*selectorArgs))
-    for key in keys:
-        if actionChain == None:
-            actionChain = action.key_down(Keys[key], element)
-        else:
-            actionChain = actionChain.key_down(Keys[key], element)
-    if actionChain == None:
-        actionChain = action.click(element)
-    else:
+
+    if modifier != None:
+        actionChain = action.key_down(getattr(Keys, modifier))
         actionChain = actionChain.click(element)
-    for key in keys:
-        actionChain = action.key_down(Keys[key], element)
+        actionChain = action.key_up(getattr(Keys, modifier))
+        print("I am doing ctrl")
+    else:
+        actionChain = action.click(element)
+        print("just click")
+
     actionChain.perform()
     return element
 
@@ -444,16 +443,15 @@ def wait_and_move_and_context_click_on_element(*selectorArgs):
     action.context_click(element).perform()
     return element
 
-def wait_and_send_keyboard(*selectorArgs, keys=None):
+def send_keyboard(modifier=None, key=None):
     action = ActionChains(driver)
-    element = wait_for_visible(*make_selector(*selectorArgs))
-    for key in keys:
-        if actionChain == None:
-            actionChain = action.key_down(Keys[key], element)
-        else:
-            actionChain = actionChain.key_down(Keys[key], element)
-    for key in keys:
-        actionChain = action.key_down(Keys[key], element)
+    if modifier != None:
+        actionChain = action.key_down(getattr(Keys, modifier))
+        if key != None:
+            actionChain = actionChain.send_keys(key)
+        actionChain = action.key_up(getattr(Keys, modifier))
+    else:
+        actionChain = action.send_keys(key)
     actionChain.perform()
 
 def tick(factor=1):

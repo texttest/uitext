@@ -429,10 +429,8 @@ def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
         actionChain = action.key_down(getattr(Keys, modifier))
         actionChain = actionChain.click(element)
         actionChain = action.key_up(getattr(Keys, modifier))
-        print("I am doing ctrl")
     else:
         actionChain = action.click(element)
-        print("just click")
 
     actionChain.perform()
     return element

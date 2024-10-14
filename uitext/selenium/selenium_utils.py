@@ -421,12 +421,40 @@ def wait_and_hover_on_element(*selectorArgs):
     action.move_to_element(element).perform()
     return element
 
-def wait_and_move_and_click_on_element(*selectorArgs):
+def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
     action = ActionChains(driver)
     element = wait_for_visible(*make_selector(*selectorArgs))
-    action.click(element).perform()
+
+    if modifier != None:
+        actionChain = action.key_down(getattr(Keys, modifier))
+        actionChain = actionChain.click(element)
+        actionChain = action.key_up(getattr(Keys, modifier))
+        print("I am doing ctrl")
+    else:
+        actionChain = action.click(element)
+        print("just click")
+
+    actionChain.perform()
     return element
 
+def wait_and_move_and_context_click_on_element(*selectorArgs):
+    action = ActionChains(driver)
+    element = wait_for_visible(*make_selector(*selectorArgs))
+    action.context_click(element).perform()
+    return element
+
+def send_keyboard(modifier=None, key=None):
+    action = ActionChains(driver)
+    if modifier != None:
+        if key == None:
+            actionChain = action.send_keys(getattr(Keys, modifier))
+        else:
+            actionChain = action.key_down(getattr(Keys, modifier))
+            actionChain = actionChain.send_keys(key)
+            actionChain = actionChain.key_up(getattr(Keys, modifier))
+    else:
+        actionChain = action.send_keys(key)
+    actionChain.perform()
 
 def tick(factor=1):
     if delay:

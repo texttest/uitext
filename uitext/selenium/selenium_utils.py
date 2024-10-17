@@ -113,6 +113,8 @@ def create_chrome_driver():
     
     options.set_capability('goog:loggingPrefs', {'browser':'ALL'})
     create_driver_object_and_retry(webdriver.Chrome, options)
+    enable_clipboard_permissions()
+
         
 def create_firefox_driver():
     options = webdriver.FirefoxOptions()
@@ -132,6 +134,14 @@ def create_firefox_driver():
         options.add_argument("--width=" + width)
         options.add_argument("--height=" + height)
     create_driver_object_and_retry(webdriver.Firefox, options)
+
+def enable_clipboard_permissions():
+    driver.execute_cdp_cmd(
+        cmd="Browser.grantPermissions",
+        cmd_args={
+            'permissions': ['clipboardReadWrite']
+        }
+    )
         
 def create_edge_driver():
     options = webdriver.EdgeOptions()

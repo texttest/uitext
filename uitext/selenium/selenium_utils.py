@@ -451,6 +451,37 @@ def wait_and_move_and_context_click_on_element(*selectorArgs):
     action.context_click(element).perform()
     return element
 
+def wait_and_move_and_context_click_on_element_using_js(*selectorArgs):
+    if len(selectorArgs) != 2:
+        raise ValueError("wait_and_move_and_context_click_on_element requires exactly 2 arguments: by and value")
+    
+    by, value = selectorArgs
+    element = wait_for_visible(*make_selector(by, value))
+    
+    # Use JavaScript to trigger the right-click event
+    driver.execute_script("""
+        (function(element) {
+            console.log('Triggering right-click event on element:', element);
+            
+            // Get the element's bounding rectangle
+            var rect = element.getBoundingClientRect();
+            
+            // Calculate the center coordinates of the element
+            var x = rect.left + (rect.width / 2);
+            var y = rect.top + (rect.height / 2);
+            
+            // Create and dispatch the contextmenu event at the center of the element
+            var event = new MouseEvent('contextmenu', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                clientX: x,
+                clientY: y
+            });
+            element.dispatchEvent(event);
+        })(arguments[0]);
+    """, element)
+
 def send_keyboard(modifier=None, key=None):
     action = ActionChains(driver)
     if modifier != None:

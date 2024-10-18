@@ -445,6 +445,38 @@ def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
     actionChain.perform()
     return element
 
+def wait_and_click_element_js(*selectorArgs, modifier=None):
+    selector = make_selector(*selectorArgs)
+    element = wait_for_visible(*selector)
+    
+    if modifier:
+        modifier = modifier.lower()
+        modifiers = {
+            'control': 'ctrlKey',
+            'ctrl': 'ctrlKey',
+            'shift': 'shiftKey',
+            'alt': 'altKey'
+        }
+        modifier_key = modifiers.get(modifier, '')
+        script = f"""
+        var element = arguments[0];
+        var event = new MouseEvent('click', {{
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            {modifier_key}: true
+        }});
+        element.dispatchEvent(event);
+        """
+    else:
+        script = """
+        var element = arguments[0];
+        element.click();
+        """
+    
+    driver.execute_script(script, element)
+    return element
+
 def wait_and_move_and_context_click_on_element(*selectorArgs):
     action = ActionChains(driver)
     element = wait_for_visible(*make_selector(*selectorArgs))

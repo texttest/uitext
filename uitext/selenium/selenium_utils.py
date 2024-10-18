@@ -431,6 +431,8 @@ def wait_and_hover_on_element(*selectorArgs):
     action.move_to_element(element).perform()
     return element
 
+
+
 def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
     """
     Waits for an element to be visible, moves to it, and performs a click. Optionally, a modifier key can be held down during the click. Keep in mind in some pipelines the modifier key may not work as expected. Try using the JavaScript version (wait_and_click_element_js) if you encounter issues.
@@ -446,7 +448,7 @@ def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
         The web element that was found and clicked.
 
     Example:
-    wait_and_move_and_click_on_element('css selector', '#myElement', modifier='CONTROL')
+    wait_and_move_and_click_on_element('my-data-test-id', modifier='CONTROL')
     """
     action = ActionChains(driver)
     element = wait_for_visible(*make_selector(*selectorArgs))
@@ -476,7 +478,7 @@ def wait_and_click_element_js(*selectorArgs, modifier=None):
         The web element that was found and clicked.
 
     Example:
-    wait_and_click_element_js('css selector', '#myElement', modifier='CONTROL')
+    wait_and_click_element_js('my-data-test-id', modifier='CONTROL')
     """
     selector = make_selector(*selectorArgs)
     element = wait_for_visible(*selector)
@@ -522,7 +524,7 @@ def wait_and_move_and_context_click_on_element(*selectorArgs):
         The web element that was found and right-clicked.
 
     Example:
-    wait_and_move_and_context_click_on_element('css selector', '#myElement')
+    wait_and_move_and_context_click_on_element('my-data-test-id', modifier='CONTROL')
     """
     action = ActionChains(driver)
     element = wait_for_visible(*make_selector(*selectorArgs))
@@ -546,7 +548,7 @@ def wait_and_move_and_context_click_on_element_using_js(*selectorArgs):
         The web element that was found and right-clicked.
 
     Example:
-    wait_and_move_and_context_click_on_element_using_js('css selector', '#myElement')
+    wait_and_move_and_context_click_on_element_using_js('my-data-test-id', modifier='CONTROL')
     """
     if len(selectorArgs) != 2:
         raise ValueError("wait_and_move_and_context_click_on_element requires exactly 2 arguments: by and value")

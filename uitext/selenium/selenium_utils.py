@@ -379,7 +379,38 @@ def wait_for_element(*selectorArgs, **kw):
     
 def wait_for_visible(*selectorArgs, **kw):
     return wait_until(EC.visibility_of_element_located(make_selector(*selectorArgs)), **kw)
+
+def wait_for_visible_js_xpath(driver, xpath, timeout=10):
+    """
+    Waits for an element located by XPath to be visible using JavaScript.
+
+    Parameters:
+        driver (WebDriver): The Selenium WebDriver instance.
+        xpath (str): The XPath selector string for the target element.
+        timeout (int, optional): Maximum time to wait for the element. Defaults to 30 seconds.
+
+    Returns:
+        WebElement: The web element that is found and visible.
+
+    Raises:
+        TimeoutException: If the element is not visible within the timeout period.
+    """
+    try:
+        return WebDriverWait(driver, timeout).until(
+            lambda d: d.execute_script("""
+                var xpath = arguments[0];
+                var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                var elem = result.singleNodeValue;
+                if (elem && elem.offsetParent !== null) {
+                    return elem;
+                }
+                return null;
+            """, xpath)
+        )
+    except TimeoutException:
+        raise TimeoutException(f"Element with XPath '{xpath}' not visible after {timeout} seconds")
     
+
 def wait_for_invisible(*selectorArgs, **kw):
     return wait_until(EC.invisibility_of_element_located(make_selector(*selectorArgs)), **kw)
 
@@ -463,7 +494,7 @@ def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
     actionChain.perform()
     return element
 
-def wait_and_click_element_js(*selectorArgs, modifier=None):
+def wait_and_click_element_js(*selectorArgs, modifier=None, useJs=False):
     """
     Waits for an element to be visible and performs a click using JavaScript. Optionally, a modifier key can be held down during the click.
 
@@ -481,7 +512,7 @@ def wait_and_click_element_js(*selectorArgs, modifier=None):
     wait_and_click_element_js('my-data-test-id', modifier='CONTROL')
     """
     selector = make_selector(*selectorArgs)
-    element = wait_for_visible(*selector)
+    element = wait_for_visible(*selector) if not useJs else wait_for_visible_js_xpath(driver,selector[1])
     
     if modifier:
         modifier = modifier.lower()
@@ -504,9 +535,20 @@ def wait_and_click_element_js(*selectorArgs, modifier=None):
         """
     else:
         script = """
-        var element = arguments[0];
-        element.click();
-        """
+            var element = arguments[0];
+            if (element) {
+                console.log('Element found');
+                var event = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                element.dispatchEvent(event);
+                console.log('Clicked element');
+            } else {
+                console.log('Element not found');
+            }
+            """
     
     driver.execute_script(script, element)
     return element

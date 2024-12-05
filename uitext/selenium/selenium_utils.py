@@ -1,11 +1,11 @@
 
-from selenium import webdriver # @UnresolvedImport
-from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImport
-from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
-from selenium.webdriver.common.keys import Keys # @UnresolvedImport
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import WebDriverException, StaleElementReferenceException,\
-    NoSuchElementException # @UnresolvedImport
-from selenium.webdriver.common.by import By as SeleniumBy # @UnresolvedImport
+    NoSuchElementException, TimeoutException
+from selenium.webdriver.common.by import By as SeleniumBy
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 
@@ -398,20 +398,22 @@ def wait_for_visible_js_xpath(driver, xpath, timeout=10):
     try:
         return WebDriverWait(driver, timeout).until(
             lambda d: d.execute_script("""
-                // Retrieve the XPath from the first argument
+                // Retrieve all elements matching the XPath
                 var xpath = arguments[0];
-                                       
-                // Evaluate the XPath expression and return the first element
-                var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);             
-                var elem = result.singleNodeValue;
+                var results = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 
-                // Check if the element is visible on the screen
-                if (elem.checkVisibility({ checkVisibilityCSS: true })) {
-                    return elem;
+                for (var i = 0; i < results.snapshotLength; i++) {
+                    var elem = results.snapshotItem(i);
+                    if (elem.checkVisibility({ checkVisibilityCSS: true })) {
+                        console.log('Element with XPath ' + xpath + ' is visible on screen');
+                        return elem;
+                    } else {
+                        console.log('No element with XPath ' + xpath + ' not visible on screen');
+                    }
                 }
                 
-                // Return null if the element is not visible
-                return null;
+                // Return null if none are visible
+                null;
             """, xpath)
         )
     except TimeoutException:

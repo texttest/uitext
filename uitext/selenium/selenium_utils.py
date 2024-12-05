@@ -382,15 +382,15 @@ def wait_for_visible(*selectorArgs, **kw):
 
 def wait_for_visible_js_xpath(driver, xpath, timeout=10):
     """
-    Waits for an element located by XPath to be visible using JavaScript.
+    Waits for an element located by XPath to be visible on the screen using JavaScript.
 
     Parameters:
         driver (WebDriver): The Selenium WebDriver instance.
         xpath (str): The XPath selector string for the target element.
-        timeout (int, optional): Maximum time to wait for the element. Defaults to 30 seconds.
+        timeout (int, optional): Maximum time to wait for the element. Defaults to 10 seconds.
 
     Returns:
-        WebElement: The web element that is found and visible.
+        WebElement: The web element that is found and visible on the screen.
 
     Raises:
         TimeoutException: If the element is not visible within the timeout period.
@@ -398,17 +398,24 @@ def wait_for_visible_js_xpath(driver, xpath, timeout=10):
     try:
         return WebDriverWait(driver, timeout).until(
             lambda d: d.execute_script("""
+                // Retrieve the XPath from the first argument
                 var xpath = arguments[0];
-                var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                                       
+                // Evaluate the XPath expression and return the first element
+                var result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);             
                 var elem = result.singleNodeValue;
-                if (elem && elem.offsetParent !== null) {
+                
+                // Check if the element is visible on the screen
+                if (elem.checkVisibility({ checkVisibilityCSS: true })) {
                     return elem;
                 }
+                
+                // Return null if the element is not visible
                 return null;
             """, xpath)
         )
     except TimeoutException:
-        raise TimeoutException(f"Element with XPath '{xpath}' not visible after {timeout} seconds")
+        raise TimeoutException(f"Element with XPath '{xpath}' not visible on screen after {timeout} seconds.")
     
 
 def wait_for_invisible(*selectorArgs, **kw):

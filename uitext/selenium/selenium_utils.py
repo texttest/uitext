@@ -1,11 +1,11 @@
 
-from selenium import webdriver # @UnresolvedImport
-from selenium.webdriver.support.ui import WebDriverWait, Select # @UnresolvedImport
-from selenium.webdriver.support import expected_conditions as EC # @UnresolvedImport
-from selenium.webdriver.common.keys import Keys # @UnresolvedImport
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import WebDriverException, StaleElementReferenceException,\
-    NoSuchElementException # @UnresolvedImport
-from selenium.webdriver.common.by import By as SeleniumBy # @UnresolvedImport
+    NoSuchElementException, TimeoutException
+from selenium.webdriver.common.by import By as SeleniumBy
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.action_chains import ActionChains
 
@@ -379,7 +379,44 @@ def wait_for_element(*selectorArgs, **kw):
     
 def wait_for_visible(*selectorArgs, **kw):
     return wait_until(EC.visibility_of_element_located(make_selector(*selectorArgs)), **kw)
+
+def wait_for_visible_js_xpath(driver, xpath, timeout=10):
+    """
+    Waits for an element located by XPath to be visible on the screen using JavaScript.
+
+    Parameters:
+        driver (WebDriver): The Selenium WebDriver instance.
+        xpath (str): The XPath selector string for the target element.
+        timeout (int, optional): Maximum time to wait for the element. Defaults to 10 seconds.
+
+    Returns:
+        WebElement: The web element that is found and visible on the screen.
+
+    Raises:
+        TimeoutException: If the element is not visible within the timeout period.
+    """
+    try:
+        return WebDriverWait(driver, timeout).until(
+            lambda d: d.execute_script("""
+                // Retrieve all elements matching the XPath
+                var xpath = arguments[0];
+                var results = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                
+                for (var i = 0; i < results.snapshotLength; i++) {
+                    var elem = results.snapshotItem(i);
+                    if (elem.checkVisibility({ checkVisibilityCSS: true })) {
+                        return elem;
+                    }
+                }
+                
+                // Return null if none are visible
+                null;
+            """, xpath)
+        )
+    except TimeoutException:
+        raise TimeoutException(f"Element with XPath '{xpath}' not visible on screen after {timeout} seconds.")
     
+
 def wait_for_invisible(*selectorArgs, **kw):
     return wait_until(EC.invisibility_of_element_located(make_selector(*selectorArgs)), **kw)
 
@@ -463,7 +500,7 @@ def wait_and_move_and_click_on_element(*selectorArgs, modifier=None):
     actionChain.perform()
     return element
 
-def wait_and_click_element_js(*selectorArgs, modifier=None):
+def wait_and_click_element_js(*selectorArgs, modifier=None, useJs=False):
     """
     Waits for an element to be visible and performs a click using JavaScript. Optionally, a modifier key can be held down during the click.
 
@@ -481,7 +518,7 @@ def wait_and_click_element_js(*selectorArgs, modifier=None):
     wait_and_click_element_js('my-data-test-id', modifier='CONTROL')
     """
     selector = make_selector(*selectorArgs)
-    element = wait_for_visible(*selector)
+    element = wait_for_visible(*selector) if not useJs else wait_for_visible_js_xpath(driver,selector[1])
     
     if modifier:
         modifier = modifier.lower()
@@ -504,9 +541,16 @@ def wait_and_click_element_js(*selectorArgs, modifier=None):
         """
     else:
         script = """
-        var element = arguments[0];
-        element.click();
-        """
+            var element = arguments[0];
+            if (element) {
+                var event = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                element.dispatchEvent(event);
+            }
+            """
     
     driver.execute_script(script, element)
     return element

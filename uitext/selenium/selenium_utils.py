@@ -405,10 +405,7 @@ def wait_for_visible_js_xpath(driver, xpath, timeout=10):
                 for (var i = 0; i < results.snapshotLength; i++) {
                     var elem = results.snapshotItem(i);
                     if (elem.checkVisibility({ checkVisibilityCSS: true })) {
-                        console.log('Element with XPath ' + xpath + ' is visible on screen');
                         return elem;
-                    } else {
-                        console.log('No element with XPath ' + xpath + ' not visible on screen');
                     }
                 }
                 

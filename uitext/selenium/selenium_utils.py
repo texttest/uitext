@@ -543,16 +543,12 @@ def wait_and_click_element_js(*selectorArgs, modifier=None, useJs=False):
         script = """
             var element = arguments[0];
             if (element) {
-                console.log('Element found');
                 var event = new MouseEvent('click', {
                     bubbles: true,
                     cancelable: true,
                     view: window
                 });
                 element.dispatchEvent(event);
-                console.log('Clicked element');
-            } else {
-                console.log('Element not found');
             }
             """
     
